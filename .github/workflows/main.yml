@@ -27,10 +27,16 @@ jobs:
       run: dotnet restore "Plan_Cabinet/Plan_Cabinet.csproj" --runtime win-x64
 
     - name: Import Signing Certificate
-      uses: appleboy/cert-action@master
-      with:
-        key: ${{ secrets.PFX_CERTIFICATE_BASE64 }}
-        password: ${{ secrets.PFX_PASSWORD }}
+      shell: powershell
+      run: |
+        $pfx_base64 = "${{ secrets.PFX_CERTIFICATE_BASE64 }}"
+        $pfx_password = "${{ secrets.PFX_PASSWORD }}"
+        $pfx_bytes = [System.Convert]::FromBase64String($pfx_base64)
+        [System.IO.File]::WriteAllBytes("cert.pfx", $pfx_bytes)
+        
+        # Import the certificate into the certificate store
+        $pfx_password_secure = ConvertTo-SecureString -String $pfx_password -AsPlainText -Force
+        Import-PfxCertificate -FilePath "cert.pfx" -CertStoreLocation Cert:\CurrentUser\My -Password $pfx_password_secure
 
     - name: Build and Package MAUI App for Windows
       run: dotnet publish "Plan_Cabinet/Plan_Cabinet.csproj" -f net8.0-windows10.0.22000.0 -c Release --no-restore --runtime win-x64 --self-contained true /p:PublishReadyToRun=true /p:Platform=x64 /p:AppxPackageSigningEnabled=true
