@@ -1,9 +1,10 @@
 name: Publish Win-x64
 
-on:
+on:  
   push:
-    branches: [ master ]
-  workflow_dispatch:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
 
 jobs:
   build:
