@@ -64,8 +64,9 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: Plan_Cabinet-installer
+          path: ${{ github.workspace }}/gh-pages-temp
       - name: Deploy to GitHub Pages
         uses: peaceiris/actions-gh-pages@v4
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: ${{ github.workspace }}/Plan_Cabinet-installer
+          publish_dir: ${{ github.workspace }}/gh-pages-temp/Plan_Cabinet-installer
