@@ -1,0 +1,214 @@
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:pdfViewer="clr-namespace:Syncfusion.Maui.PdfViewer;assembly=Syncfusion.Maui.PdfViewer"
+             xmlns:local="clr-namespace:Plan_Cabinet.Views"
+             xmlns:viewModels="clr-namespace:Plan_Cabinet.View_Models"  
+             xmlns:toolkit="http://schemas.microsoft.com/dotnet/2022/maui/toolkit"
+             x:Class="Plan_Cabinet.Views.PdfViewerPage"
+             Title="{Binding Title}"
+             NavigationPage.HasNavigationBar="False">
+
+ 
+
+    <Grid RowSpacing="0">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+
+        <Grid Grid.Row="0">
+            <pdfViewer:SfPdfViewer x:Name="pdfViewer"
+                       DocumentSource="{Binding PdfStreamSource}"
+                                   DocumentLoaded="OnPdfViewerDocumentLoaded"
+                       SizeChanged="OnPdfViewerSizeChanged">
+            </pdfViewer:SfPdfViewer>
+        </Grid>
+
+        <StackLayout Grid.Row="1"
+                     Orientation="Horizontal"
+                     HorizontalOptions="Center"
+                     Spacing="20"
+                     Padding="0,10"
+                     BackgroundColor="White">
+            <Button Text="Download PDF"
+                    HeightRequest="50"
+                    WidthRequest="160"
+                    Command="{Binding DownloadCommand}"
+                    CornerRadius="25" />
+
+            <Button Text="Share PDF"
+                    HeightRequest="50"
+                    WidthRequest="160"
+                    Command="{Binding ShareCommand}"
+                    CornerRadius="25" />
+
+            <Button Text="Cancel"
+                    HeightRequest="50"
+                    WidthRequest="160"
+                    Command="{Binding CancelCommand}"
+                    CornerRadius="25" />
+        </StackLayout>
+
+        <ContentView x:Name="SharePopup"
+                     IsVisible="{Binding IsSharePopupVisible}"
+                     BackgroundColor="#80000000"
+                     Padding="20"
+                     VerticalOptions="Fill"
+                     HorizontalOptions="Fill"
+                     InputTransparent="False">
+            <ContentView.GestureRecognizers>
+                <TapGestureRecognizer Command="{Binding ShareCancelCommand}" />
+            </ContentView.GestureRecognizers>
+
+            <Frame BackgroundColor="White"
+                   CornerRadius="12"
+                   Padding="15"
+                   WidthRequest="600"
+                   MinimumHeightRequest="400"
+                   VerticalOptions="Center"
+                   HorizontalOptions="Center"
+                   HasShadow="True">
+
+                <Frame.GestureRecognizers>
+                    <TapGestureRecognizer Command="{Binding ClearShareInputsCommand}" />
+                </Frame.GestureRecognizers>
+
+                <ScrollView>
+                    <VerticalStackLayout Spacing="12">
+                        <Label Text="Share PDF"
+                               FontAttributes="Bold"
+                               FontSize="20"
+                               HorizontalOptions="Center" />
+
+                        <Label Text="Recipient Name(s) – comma separated" />
+                        <ScrollView Orientation="Horizontal"
+                                    IsVisible="{Binding IsNameTokensLayoutVisible}"
+                                    HorizontalOptions="Fill"
+                                    VerticalOptions="Start"
+                                    BackgroundColor="Transparent"
+                                    HorizontalScrollBarVisibility="Never"
+                                    VerticalScrollBarVisibility="Never">
+                            <FlexLayout x:Name="NameTokensLayout"
+                                        Wrap="Wrap"
+                                        AlignItems="Start"
+                                        HorizontalOptions="Start"
+                                        Margin="0"
+                                        IsVisible="{Binding IsNameTokensLayoutVisible}"
+                                        BindableLayout.ItemsSource="{Binding NameTokens}">
+                                <BindableLayout.ItemTemplate>
+                                    <DataTemplate>
+                                        <Frame Padding="4"
+                                               Margin="1"
+                                               CornerRadius="8"
+                                               BackgroundColor="SeaGreen"
+                                               HasShadow="False">
+                                            <HorizontalStackLayout Spacing="2">
+                                                <Label Text="{Binding .}"
+                                                       TextColor="White"
+                                                       FontSize="12"
+                                                       VerticalOptions="Center"
+                                                       HorizontalOptions="Center" />
+                                                <BoxView WidthRequest="1"
+                                                         HeightRequest="26"
+                                                         Color="White"
+                                                         VerticalOptions="Center" />
+                                                <Frame Padding="2"
+                                                       WidthRequest="26"
+                                                       HeightRequest="26"
+                                                       BackgroundColor="LightGray"
+                                                       BorderColor="Gray"
+                                                       CornerRadius="13"
+                                                       HasShadow="False">
+                                                    <Label Text="×"
+                                                           TextColor="Black"
+                                                           FontSize="21"
+                                                           FontAttributes="Bold"
+                                                           LineHeight="1"
+                                                           VerticalOptions="Center"
+                                                           HorizontalOptions="Center" />
+                                                </Frame>
+                                            </HorizontalStackLayout>
+                                        </Frame>
+                                    </DataTemplate>
+                                </BindableLayout.ItemTemplate>
+                            </FlexLayout>
+                        </ScrollView>
+                        <Entry x:Name="RecipientNameEntry"
+                               Text="{Binding RecipientNameEntryText}"
+                               Placeholder="Type name and press comma or enter"
+                               Completed="OnRecipientNameEntryCompleted" />
+
+                        <Label Text="Recipient Email(s) – comma separated" />
+                        <ScrollView Orientation="Horizontal"
+                                    IsVisible="{Binding IsEmailTokensLayoutVisible}"
+                                    HorizontalOptions="Fill"
+                                    VerticalOptions="Start"
+                                    BackgroundColor="Transparent"
+                                    HorizontalScrollBarVisibility="Never"
+                                    VerticalScrollBarVisibility="Never">
+                            <FlexLayout x:Name="EmailTokensLayout"
+                                        Wrap="Wrap"
+                                        AlignItems="Start"
+                                        HorizontalOptions="Start"
+                                        Margin="0"
+                                        IsVisible="{Binding IsEmailTokensLayoutVisible}"
+                                        BindableLayout.ItemsSource="{Binding EmailTokens}">
+                                <BindableLayout.ItemTemplate>
+                                    <DataTemplate>
+                                        <Frame Padding="4"
+                                               Margin="1"
+                                               CornerRadius="8"
+                                               BackgroundColor="SeaGreen"
+                                               HasShadow="False">
+                                            <HorizontalStackLayout Spacing="2">
+                                                <Label Text="{Binding .}"
+                                                       TextColor="White"
+                                                       FontSize="12"
+                                                       VerticalOptions="Center"
+                                                       HorizontalOptions="Center" />
+                                                <Frame Padding="2"
+                                                       WidthRequest="26"
+                                                       HeightRequest="26"
+                                                       BackgroundColor="Transparent"
+                                                       BorderColor="White"
+                                                       CornerRadius="13"
+                                                       HasShadow="False">
+                                                    <Label Text="×"
+                                                           TextColor="White"
+                                                           FontSize="21"
+                                                           FontAttributes="Bold"
+                                                           LineHeight="1"
+                                                           VerticalOptions="Center"
+                                                           HorizontalOptions="Center" />
+                                                </Frame>
+                                            </HorizontalStackLayout>
+                                        </Frame>
+                                    </DataTemplate>
+                                </BindableLayout.ItemTemplate>
+                            </FlexLayout>
+                        </ScrollView>
+                        <Entry x:Name="RecipientEmailEntry"
+                               Text="{Binding RecipientEmailEntryText}"
+                               Placeholder="Type email and press comma or enter"
+                               Keyboard="Email"
+                               Completed="OnRecipientEmailEntryCompleted" />
+
+                        <HorizontalStackLayout Spacing="10" VerticalOptions="Center">
+                            <Switch IsToggled="{Binding AllowDownloadPermission}" />
+                            <Label Text="Allow download" VerticalOptions="Center" />
+                        </HorizontalStackLayout>
+
+                        <HorizontalStackLayout Spacing="12" HorizontalOptions="End">
+                            <Button Text="Cancel"
+                                    Command="{Binding ShareCancelCommand}"
+                                    WidthRequest="80" />
+                            <Button Text="Send"
+                                    Command="{Binding ShareSendCommand}"
+                                    WidthRequest="80" />
+                        </HorizontalStackLayout>
+                    </VerticalStackLayout>
+                </ScrollView>
+            </Frame>
+        </ContentView>
+    </Grid>
+</ContentPage>

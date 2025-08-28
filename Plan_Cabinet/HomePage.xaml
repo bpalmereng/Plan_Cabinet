@@ -1,0 +1,109 @@
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:viewmodels="clr-namespace:Plan_Cabinet.ViewModels"
+             x:Class="Plan_Cabinet.HomePage"
+             x:Name="ThisPage"
+             BackgroundColor="White"
+             x:DataType="viewmodels:HomePageViewModel"
+             Title="">
+
+    <Grid Padding="30" VerticalOptions="Center" HorizontalOptions="Fill">
+        <StackLayout x:Name="masterlayout" VerticalOptions="Center" HorizontalOptions="Center" Spacing="15">
+
+            <!-- Titles -->
+            <Label Text="Thomas County Public Works"
+                   FontSize="Large"
+                   FontAttributes="Bold"
+                   TextColor="Black"
+                   HorizontalTextAlignment="Center" />
+
+            <Label Text="Plan Cabinet"
+                   FontSize="Large"
+                   FontAttributes="Bold"
+                   TextColor="Black"
+                   HorizontalTextAlignment="Center"
+                   Margin="0,0,0,40" />
+
+            <!-- Button Row -->
+            <Grid HorizontalOptions="Center" ColumnSpacing="30">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="140" />
+                    <ColumnDefinition Width="140" />
+                    <ColumnDefinition Width="*" />
+                </Grid.ColumnDefinitions>
+
+                <!-- Add Plan Layout -->
+                <StackLayout x:Name="Add_Plan_Layout" Grid.Column="1" HorizontalOptions="Center" Spacing="5">
+                    <Grid>
+                        <Image x:Name="AddIconBlack"
+                               Source="addiconblack.png"
+                               HorizontalOptions="Center"
+                               VerticalOptions="Center"
+                               WidthRequest="100"
+                               Margin="25"
+                               Opacity="1" />
+
+                        <Image x:Name="AddIconBlue"
+                               Source="addiconblue.png"
+                               HorizontalOptions="Center"
+                               VerticalOptions="Center"
+                               WidthRequest="100"
+                               Margin="25"
+                               Opacity="0" />
+                    </Grid>
+
+                    <BoxView HeightRequest="1" BackgroundColor="Gray" />
+
+                    <Label Text="Add Plans"
+                           HorizontalOptions="Center"
+                           HorizontalTextAlignment="Center" />
+                </StackLayout>
+
+                <!-- View Plan Layout -->
+                <StackLayout x:Name="View_Plan_Layout" Grid.Column="2" HorizontalOptions="Center" Spacing="5">
+                    <Grid>
+                        <Image x:Name="ViewIconBlack"
+                               Source="searchiconblack.png"
+                               HorizontalOptions="Center"
+                               VerticalOptions="Center"
+                               WidthRequest="100"
+                               Margin="25"
+                               Opacity="1" />
+
+                        <Image x:Name="ViewIconBlue"
+                               Source="searchiconblue.png"
+                               HorizontalOptions="Center"
+                               VerticalOptions="Center"
+                               WidthRequest="100"
+                                Margin="25"
+                               Opacity="0" />
+                    </Grid>
+
+                    <BoxView HeightRequest="1" BackgroundColor="Gray" />
+
+                    <Label Text="View Plans"
+                           HorizontalOptions="Center"
+                           HorizontalTextAlignment="Center" />
+                </StackLayout>
+            </Grid>
+
+            <!-- Busy Indicator -->
+            <StackLayout VerticalOptions="Center" Spacing="5" Padding="0,40,0,0" HorizontalOptions="Center">
+                <ActivityIndicator x:Name="IsBusyIndicator"
+                                   IsRunning="True"
+                                   IsVisible="True"
+                                   Opacity="0"
+                                   Color="Blue"
+                                   WidthRequest="200"
+                                   HorizontalOptions="Center" />
+                <Label x:Name="isbusytext"
+                       Text="Loading..."
+                       FontSize="14"
+                       HorizontalOptions="Center"
+                       Opacity="0" />
+            </StackLayout>
+
+        </StackLayout>
+    </Grid>
+</ContentPage>

@@ -1,0 +1,235 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="Plan_Cabinet.Views.View_Plans"
+             xmlns:controls="clr-namespace:Plan_Cabinet.Helpers"
+             NavigationPage.HasNavigationBar="False">
+    <ContentPage.Resources>
+        <ResourceDictionary>
+            <Style x:Key="TapLabelStyle" TargetType="Label">
+                <Setter Property="FontSize" Value="Medium"/>
+                <Setter Property="HorizontalTextAlignment" Value="Center"/>
+            </Style>
+        </ResourceDictionary>
+    </ContentPage.Resources>
+    <Grid>
+        <Grid BackgroundColor="White" Padding="0,20,0,0">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="*" />
+                <RowDefinition Height="60" />
+            </Grid.RowDefinitions>
+
+            <StackLayout Grid.Row="0">
+                <StackLayout.Padding>
+                    <OnIdiom x:TypeArguments="Thickness" Phone="0,5,0,0" Tablet="20,10,20,0" Desktop="60,0,60,20"/>
+                </StackLayout.Padding>
+                <Grid Padding="0,0,0,0">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="40" />
+                    </Grid.ColumnDefinitions>
+                    <StackLayout Grid.Column="0">
+                        <controls:BindableSearchBar BackgroundColor="White" 
+                            Placeholder="search for a plan......."
+                            HorizontalTextAlignment="Start"
+                            Text="{Binding SearchQuery, Mode=TwoWay}"
+                            SearchButtonPressedCommand="{Binding FilterPlansCommand}" />
+                    </StackLayout>
+                    <StackLayout Grid.Column="1" Padding="10,5,0,0">
+                        <Image Source="FilterIcon" x:Name="FilterIcon" Aspect="AspectFill">
+                            <Image.GestureRecognizers>
+                                <TapGestureRecognizer Command="{Binding ShowFilterPopupCommand}" />
+                            </Image.GestureRecognizers>
+                        </Image>
+                    </StackLayout>
+                </Grid>
+            </StackLayout>
+
+            <Grid Grid.Row="1">
+                <CollectionView BackgroundColor="White"
+                        ItemsLayout="VerticalList"
+                        SelectionMode="Single"
+                        ItemsSource="{Binding PlanList}"
+                        SelectedItem="{Binding SelectedPlan, Mode=TwoWay}"
+                        SelectionChangedCommand="{Binding SelectPlanCommand}">
+
+                    <CollectionView.Header>
+                        <Grid>
+                            <BoxView BackgroundColor="DarkSlateGray" />
+                            <Grid BackgroundColor="White" Margin="0,2,0,1" Padding="0,10,0,10">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="30*" />
+                                    <ColumnDefinition Width="20*" />
+                                    <ColumnDefinition Width="20*" />
+                                    <ColumnDefinition Width="20*" />
+                                    <ColumnDefinition Width="10*" />
+                                </Grid.ColumnDefinitions>
+                                <Label Text="Plan Name" Grid.Column="0" HorizontalTextAlignment="Start" FontSize="{OnIdiom Phone=Small, Tablet=Small, Desktop=Small}">
+                                    <Label.Padding>
+                                        <OnIdiom x:TypeArguments="Thickness" Phone="10,0,0,0" Tablet="20,0,0,0" Desktop="60,0,0,0"/>
+                                    </Label.Padding>
+                                </Label>
+                                <Label Text="Road Name" Grid.Column="1" HorizontalTextAlignment="Center" FontSize="{OnIdiom Phone=Small, Tablet=Small, Desktop=Small}" />
+                                <Label Text="Subdivision" Grid.Column="2" HorizontalTextAlignment="Center" FontSize="{OnIdiom Phone=Small, Tablet=Small, Desktop=Small}" />
+                                <Label Text="Reference" Grid.Column="3" HorizontalTextAlignment="Center" FontSize="{OnIdiom Phone=Small, Tablet=Small, Desktop=Small}" />
+                                <Label Text="Date" Grid.Column="4" HorizontalTextAlignment="Center" FontSize="{OnIdiom Phone=Small, Tablet=Small, Desktop=Small}">
+                                    <Label.Padding>
+                                        <OnIdiom x:TypeArguments="Thickness" Phone="0,0,10,0" Tablet="0,0,20,0" Desktop="0,0,60,0"/>
+                                    </Label.Padding>
+                                </Label>
+                            </Grid>
+                        </Grid>
+                    </CollectionView.Header>
+
+                    <CollectionView.ItemTemplate>
+                        <DataTemplate>
+                            <Grid>
+                                <BoxView HeightRequest="1" BackgroundColor="LightGray" VerticalOptions="Start" HorizontalOptions="Fill" />
+                                <Grid Margin="0,1,0,0" Padding="0,10,0,0">
+                                    <VisualStateManager.VisualStateGroups>
+                                        <VisualStateGroup x:Name="CommonStates">
+                                            <VisualState x:Name="Normal">
+                                                <VisualState.Setters>
+                                                    <Setter Property="BackgroundColor" Value="White" />
+                                                </VisualState.Setters>
+                                            </VisualState>
+                                            <VisualState x:Name="PointerOver">
+                                                <VisualState.Setters>
+                                                    <Setter Property="BackgroundColor" Value="LightGray" />
+                                                </VisualState.Setters>
+                                            </VisualState>
+                                        </VisualStateGroup>
+                                    </VisualStateManager.VisualStateGroups>
+
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="30*" />
+                                        <ColumnDefinition Width="20*" />
+                                        <ColumnDefinition Width="20*" />
+                                        <ColumnDefinition Width="20*" />
+                                        <ColumnDefinition Width="10*" />
+                                    </Grid.ColumnDefinitions>
+                                    <Label Text="{Binding Plan_Name}" Grid.Column="0" HorizontalTextAlignment="Start" FontSize="Micro" TextColor="Black">
+                                        <Label.Padding>
+                                            <OnIdiom x:TypeArguments="Thickness" Phone="10,0,0,0" Tablet="20,0,0,0" Desktop="60,0,0,0"/>
+                                        </Label.Padding>
+                                    </Label>
+                                    <Label Text="{Binding Rd_Name}" Grid.Column="1" HorizontalTextAlignment="Center" FontSize="Micro" TextColor="Black" />
+                                    <Label Text="{Binding Subdivision}" Grid.Column="2" HorizontalTextAlignment="Center" FontSize="Micro" TextColor="Black" />
+                                    <Label Text="{Binding Reference}" Grid.Column="3" HorizontalTextAlignment="Center" FontSize="Micro" TextColor="Black" />
+                                    <Label Text="{Binding Plan_Date}" Grid.Column="4" HorizontalTextAlignment="Center" FontSize="Micro" TextColor="Black">
+                                        <Label.Padding>
+                                            <OnIdiom x:TypeArguments="Thickness" Phone="0,0,10,0" Tablet="0,0,20,0" Desktop="0,0,60,0"/>
+                                        </Label.Padding>
+                                    </Label>
+                                </Grid>
+                            </Grid>
+                        </DataTemplate>
+                    </CollectionView.ItemTemplate>
+                </CollectionView>
+                <BoxView HeightRequest="2" BackgroundColor="LightGray" VerticalOptions="End" HorizontalOptions="Fill" />
+            </Grid>
+
+            <StackLayout Grid.Row="2" Background="White" VerticalOptions="End" Padding="0,0,0,10">
+                <Button Text="Cancel" 
+            Command="{Binding ReturnHomeCommand}" 
+            HeightRequest="40" 
+            WidthRequest="160" 
+            HorizontalOptions="Center" 
+            VerticalOptions="Center" />
+            </StackLayout>
+        </Grid>
+
+        <!-- Filter Popup -->
+        <Frame x:Name="backgroundframe" BackgroundColor="#7F000000" HorizontalOptions="Fill" VerticalOptions="Fill" IsVisible="{Binding IsFilterPopupVisible}" Grid.Row="0"/>
+        <Frame x:Name="PopupFrame" BackgroundColor="White"  WidthRequest="400" HorizontalOptions="Center" Margin="0" CornerRadius="10" IsClippedToBounds="True" IsVisible="{Binding IsFilterPopupVisible}" Grid.Row="0" VerticalOptions="Center" >
+            <StackLayout BackgroundColor="White">
+                <Label Text="Filter Plans By" FontSize="Large" HorizontalTextAlignment="Center" Margin="5"/>
+                <BoxView BackgroundColor="Black" HeightRequest="3" />
+                <ContentView VerticalOptions="Start" >
+                    <ContentView Style="{StaticResource BorderStyle}" >
+                        <ContentView Style="{StaticResource InternalViewStyle}">
+                            <Label Text="Plan Name" FontSize="Medium" HorizontalTextAlignment="Center" >
+                                <Label.GestureRecognizers>
+                                    <TapGestureRecognizer Command="{Binding FilterPlansCommand}" CommandParameter="Plan_Name"/>
+                                </Label.GestureRecognizers>
+                            </Label>
+                        </ContentView>
+                    </ContentView>
+                </ContentView>
+                <ContentView VerticalOptions="Start" >
+                    <ContentView Style="{StaticResource BorderStyle}" >
+                        <ContentView Style="{StaticResource InternalViewStyle}">
+                            <Label Text="Road Name" FontSize="Medium" HorizontalTextAlignment="Center" >
+                                <Label.GestureRecognizers>
+                                    <TapGestureRecognizer Command="{Binding FilterPlansCommand}" CommandParameter="Rd_Name"/>
+                                </Label.GestureRecognizers>
+                            </Label>
+                        </ContentView>
+                    </ContentView>
+                </ContentView>
+                <ContentView VerticalOptions="Start" >
+                    <ContentView Style="{StaticResource BorderStyle}" >
+                        <ContentView Style="{StaticResource InternalViewStyle}">
+                            <Label Text="Subdivision" FontSize="Medium" HorizontalTextAlignment="Center" >
+                                <Label.GestureRecognizers>
+                                    <TapGestureRecognizer Command="{Binding FilterPlansCommand}" CommandParameter="Subdivision"/>
+                                </Label.GestureRecognizers>
+                            </Label>
+                        </ContentView>
+                    </ContentView>
+                </ContentView>
+                <ContentView VerticalOptions="Start" >
+                    <ContentView Style="{StaticResource BorderStyle}" >
+                        <ContentView Style="{StaticResource InternalViewStyle}">
+                            <Label Text="Reference" FontSize="Medium" HorizontalTextAlignment="Center" >
+                                <Label.GestureRecognizers>
+                                    <TapGestureRecognizer Command="{Binding FilterPlansCommand}" CommandParameter="Reference"/>
+                                </Label.GestureRecognizers>
+                            </Label>
+                        </ContentView>
+                    </ContentView>
+                </ContentView>
+            </StackLayout>
+        </Frame>
+
+        <!-- Edit Popup -->
+        <Frame x:Name="backgroundframe_edit" HasShadow="True" BackgroundColor="#7F000000" HorizontalOptions="Fill" VerticalOptions="Fill" Grid.Row="0" IsVisible="{Binding IsEditPopupVisible}">
+            <Frame BackgroundColor="White"  x:Name="PopupFrameEdit"   HasShadow="True" CornerRadius="10" VerticalOptions="Center" HorizontalOptions="Center" IsClippedToBounds="True" Padding="5" WidthRequest="400" Grid.Row="0" IsVisible="{Binding IsEditPopupVisible}">
+                <StackLayout Padding="20,10,20,20">
+                    <Label Text="Edit Plan" FontSize="Large" FontAttributes="Bold" Margin="5" HorizontalTextAlignment="Center"/>
+                    <Label Text="Plan Name:" />
+                    <Entry Text="{Binding PlanNameEdit, Mode=TwoWay}" />
+                    <Label Text="Road Name:" />
+                    <Entry Text="{Binding RdNameEdit, Mode=TwoWay}" />
+                    <Label Text="Subdivision" />
+                    <Entry Text="{Binding SubdivisionEdit, Mode=TwoWay}" />
+                    <Label Text="Reference" />
+                    <Entry Text="{Binding ReferenceEdit, Mode=TwoWay}" />
+                    <Label Text="Plan Date" />
+                    <DatePicker Date="{Binding PlanDateEdit, Mode=TwoWay}" />
+                    <Grid Padding="0,15,0,0">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="50"/>
+                        </Grid.RowDefinitions>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+                        <Button Text="Submit" Command="{Binding SubmitEditCommand}" CornerRadius="3" Grid.Column="0" Margin="0,0,2.5,0" FontSize="Micro" />
+                        <Button Text="Delete" Command="{Binding DeleteEditCommand}" Style="{StaticResource RedHoverButton}" CornerRadius="3" Grid.Column="1" Margin="2.5,0,2.5,0" FontSize="Micro" />
+                        <Button Text="Cancel" Command="{Binding CancelEditCommand}" CornerRadius="3" Grid.Column="2" Margin="2.5,0,0,0" FontSize="Micro" />
+                    </Grid>
+                </StackLayout>
+            </Frame>
+        </Frame>
+
+        <!-- Loading Indicator -->
+        <Grid HorizontalOptions="Center" VerticalOptions="Center">
+            <Label Text="{Binding BusyText}" HeightRequest="40" BackgroundColor="White" HorizontalOptions="Center" VerticalOptions="Center" Margin="0,0,0,50" Padding="50,10,50,10" IsVisible="{Binding IsBusy}" />
+
+            <ActivityIndicator Color="Blue" IsVisible="{Binding IsBusy}" IsRunning="{Binding IsBusy}" HorizontalOptions="Center" VerticalOptions="Center" WidthRequest="65"/>
+        </Grid>
+    </Grid>
+</ContentPage>

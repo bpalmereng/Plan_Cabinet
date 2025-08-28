@@ -1,0 +1,88 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:vm="clr-namespace:Plan_Cabinet.View_Models"
+             x:Class="Plan_Cabinet.Views.Add_Plans"
+             Title="Add Plan">
+
+ 
+    <ScrollView>
+        <Grid>
+            <!-- Background dim -->
+            <Frame x:Name="Backgroundframe" BackgroundColor="#7F000000" HasShadow="True" HorizontalOptions="Fill" VerticalOptions="Fill" />
+
+            <!-- Popup Frame -->
+            <Frame BackgroundColor="White"
+                   WidthRequest="{OnIdiom Phone=400, Tablet=400, Desktop=800}"
+                   VerticalOptions="Center"
+                   HorizontalOptions="Center"
+                   CornerRadius="10"
+                   IsClippedToBounds="True"
+                   Padding="15">
+
+                <StackLayout>
+                    <Label Text="Add New Plan" FontSize="Large" FontAttributes="Bold" Margin="5" HorizontalTextAlignment="Center"/>
+
+                    <Label Text="Plan Name:" Padding="0,0,0,5"/>
+                    <Entry x:Name="Plan_Name_Entry" Placeholder="Please enter the plan name..."
+                           Text="{Binding PlanName}"
+                           ReturnType="Next" />
+
+                    <Label Text="Road Name:" Padding="0,10,0,5" />
+                    <Entry x:Name="Rd_Name_Entry" Placeholder="Please enter the road name..."
+                           Text="{Binding RdName}"
+                           ReturnType="Next" />
+
+                    <Label Text="Subdivision:" Padding="0,10,0,5" />
+                    <Entry x:Name="Subdivision_Entry" Placeholder="Please enter a subdivision..."
+                           Text="{Binding Subdivision}"
+                           ReturnType="Next" />
+
+                    <Label Text="Reference:" Padding="0,10,0,5" />
+                    <Entry x:Name="Reference_Entry" Placeholder="Please enter a reference..."
+                           Text="{Binding Reference}"
+                           ReturnType="Next" />
+
+                    <Label Text="Plan Date:" Padding="0,10,0,5" />
+                    <DatePicker x:Name="Date_Picker" Date="{Binding PlanDate}" />
+
+                    <Label Text="Upload Plan:" HorizontalOptions="Center" Margin="0,10,0,0" />
+                    <Button Text="Select PDF File"
+                            Command="{Binding PickFileCommand}"
+                            Margin="100,10,100,10" />
+
+                    <Label Text="{Binding PickedFileLabel}"
+                           HorizontalTextAlignment="Center"
+                           FontAttributes="Italic"
+                           FontSize="Small"
+                           TextColor="Gray"
+                           BackgroundColor="LightGray" />
+
+                    <Grid Padding="0,15,0,0">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="50"/>
+                        </Grid.RowDefinitions>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+
+                        <Button Text="Submit"
+                                Command="{Binding SubmitCommand}"
+                                CornerRadius="3"
+                                Grid.Column="0"
+                                FontSize="Micro"
+                                Margin="0,0,10,0" />
+
+                        <Button Text="Cancel"
+                                Command="{Binding CancelCommand}"
+                                CornerRadius="3"
+                                Grid.Column="1"
+                                FontSize="Micro"
+                                Margin="10,0,0,0" />
+                    </Grid>
+                </StackLayout>
+            </Frame>
+        </Grid>
+    </ScrollView>
+</ContentPage>
