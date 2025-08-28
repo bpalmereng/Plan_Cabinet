@@ -19,8 +19,8 @@ jobs:
       with:
         dotnet-version: '8.0.x'
         
-    - name: Install Workloads
-      run: dotnet workload install maui-windows --skip-manifest-update --disable-parallel --include-previews
+    - name: Install workloads
+      run: dotnet workload install maui-windows --include-previews
     
     - name: Restore dependencies
       run: dotnet restore "Plan_Cabinet/Plan_Cabinet.csproj"
