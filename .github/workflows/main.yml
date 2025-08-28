@@ -19,11 +19,14 @@ jobs:
       with:
         dotnet-version: '8.0.x'
         
+    - name: Install workloads
+      run: dotnet workload install maui-windows --include-previews
+    
     - name: Restore dependencies
       run: dotnet restore "Plan_Cabinet/Plan_Cabinet.csproj"
     
     - name: Build and Package MAUI App for Windows
-      run: dotnet publish "Plan_Cabinet/Plan_Cabinet.csproj" -f net8.0-windows10.0.22000.0 -c Release --no-restore --runtime win-x64
+      run: dotnet publish "Plan_Cabinet/Plan_Cabinet.csproj" -f net8.0-windows10.0.22000.0 -c Release --no-restore --runtime win-x64 --self-contained true /p:PublishReadyToRun=true
       env:
         GRAPH_CLIENT_ID: ${{ secrets.GRAPH_CLIENT_ID }}
         GRAPH_TENANT_ID: ${{ secrets.GRAPH_TENANT_ID }}
@@ -34,7 +37,7 @@ jobs:
       uses: actions/upload-artifact@v4
       with:
         name: Plan_Cabinet-installer
-        path: ${{ github.workspace }}/Plan_Cabinet/bin/Release/net8.0-windows10.0.22000.0/win10-x64/
+        path: ${{ github.workspace }}/Plan_Cabinet/bin/Release/net8.0-windows10.0.22000.0/win-x64/
         retention-days: 7
 
   deploy-pages:
