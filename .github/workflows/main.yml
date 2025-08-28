@@ -1,0 +1,31 @@
+name: Build and Publish Plan Cabinet App
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build-windows:
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Set up .NET
+        uses: actions/setup-dotnet@v3
+        with:
+          dotnet-version: '8.0.x' # Specifies .NET 8.0 for MAUI projects
+
+      - name: Restore dependencies
+        run: dotnet restore "Plan_Cabinet.csproj"
+
+      - name: Build and Publish MAUI App for Windows
+        run: dotnet publish "Plan_Cabinet.csproj" --configuration Release -f net8.0-windows10.0.22000.0 --no-self-contained
+        env:
+          GRAPH_CLIENT_ID: ${{ secrets.GRAPH_CLIENT_ID }}
+          GRAPH_TENANT_ID: ${{ secrets.GRAPH_TENANT_ID }}
+          GRAPH_CLIENT_SECRET: ${{ secrets.GRAPH_CLIENT_SECRET }}
+          GRAPH_DRIVE_ID: ${{ secrets.GRAPH_DRIVE_ID }}
