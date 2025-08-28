@@ -10,10 +10,10 @@ namespace Plan_Cabinet.Sharepoint
 {
     public class GraphService: IDisposable
     {
-        private readonly string _clientId = "475ccb44-4a52-4bb8-910d-98d1f0fb154d";
-        private readonly string _tenantId = "dcac29e1-e526-444f-bb85-15583205c205";
-        private readonly string _clientSecret = "Xzg8Q~DeskSqPzfmB4NKMeJT7PCXmxkJNU-.Xcbt";
-        private readonly string _driveId = "b!rlATLtWD50-mMErJ2AcSZFihnrwjzktEgmxHVZ8oTEtjLbxen4hgTJFkW96hPgPq"; // known drive ID
+        private readonly string _clientId = Environment.GetEnvironmentVariable("GRAPH_CLIENT_ID");
+        private readonly string _tenantId = Environment.GetEnvironmentVariable("GRAPH_TENANT_ID");
+        private readonly string _clientSecret = Environment.GetEnvironmentVariable("GRAPH_CLIENT_SECRET");
+        private readonly string _driveId = Environment.GetEnvironmentVariable("GRAPH_DRIVE_ID");
         private static string folderPath = "Plan Cabinet";
         public string? AccessToken { get; private set; }
 
