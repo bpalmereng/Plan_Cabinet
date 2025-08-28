@@ -20,10 +20,10 @@ jobs:
         dotnet-version: '8.0.x'
         
     - name: Restore dependencies
-      run: dotnet restore "Plan_Cabinet.csproj"
+      run: dotnet restore "Plan_Cabinet/Plan_Cabinet.csproj"
     
     - name: Build and Package MAUI App for Windows
-      run: dotnet publish "Plan_Cabinet.csproj" -f net8.0-windows10.0.22000.0 -c Release --no-restore
+      run: dotnet publish "Plan_Cabinet/Plan_Cabinet.csproj" -f net8.0-windows10.0.22000.0 -c Release --no-restore
       env:
         GRAPH_CLIENT_ID: ${{ secrets.GRAPH_CLIENT_ID }}
         GRAPH_TENANT_ID: ${{ secrets.GRAPH_TENANT_ID }}
