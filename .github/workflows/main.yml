@@ -25,9 +25,15 @@ jobs:
     
     - name: Restore dependencies for Windows build
       run: dotnet restore "Plan_Cabinet/Plan_Cabinet.csproj" --runtime win-x64
-    
+
+    - name: Import Signing Certificate
+      uses: appleboy/cert-action@master
+      with:
+        key: ${{ secrets.PFX_CERTIFICATE_BASE64 }}
+        password: ${{ secrets.PFX_PASSWORD }}
+
     - name: Build and Package MAUI App for Windows
-      run: dotnet publish "Plan_Cabinet/Plan_Cabinet.csproj" -f net8.0-windows10.0.22000.0 -c Release --no-restore --runtime win-x64 --self-contained true /p:PublishReadyToRun=true /p:Platform=x64
+      run: dotnet publish "Plan_Cabinet/Plan_Cabinet.csproj" -f net8.0-windows10.0.22000.0 -c Release --no-restore --runtime win-x64 --self-contained true /p:PublishReadyToRun=true /p:Platform=x64 /p:AppxPackageSigningEnabled=true
       env:
         GRAPH_CLIENT_ID: ${{ secrets.GRAPH_CLIENT_ID }}
         GRAPH_TENANT_ID: ${{ secrets.GRAPH_TENANT_ID }}
