@@ -23,10 +23,13 @@ namespace Plan_Cabinet.View_Models
         [ObservableProperty]
         private ZoomMode _currentZoomMode = ZoomMode.FitToWidth;
 
-        public PdfViewerViewModel(string fileName)
-        {
+        public PdfViewerViewModel(string fileName, string? clientId, string? tenantId, string? clientSecret, string? driveId)
+        {            
+
             _fileName = fileName;
-            _graphService = new GraphService(); // Initialize it once here
+            // Pass the variables to the new constructor
+            _graphService = new GraphService(clientId, tenantId, clientSecret, driveId);
+
             LoadPdfAsync();
 
             DownloadCommand = new AsyncRelayCommand(DownloadPdfAsync);
@@ -36,7 +39,6 @@ namespace Plan_Cabinet.View_Models
             ShareSendCommand = new AsyncRelayCommand(OnShareSend);
             ClearShareInputsCommand = new RelayCommand(ClearShareInputs);
         }
-
       
 
         [ObservableProperty]

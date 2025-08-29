@@ -14,6 +14,7 @@ namespace Plan_Cabinet.View_Models
 {
     public class ViewPlansViewModel : ObservableObject, IDisposable
     {
+
         private readonly GraphService _graphService;
         private CancellationTokenSource? _cts;
         private bool _isDisposed = false;
@@ -144,9 +145,9 @@ namespace Plan_Cabinet.View_Models
         public event Func<string, Task> NavigateToPdfRequested = delegate { return Task.CompletedTask; };
         public event Func<Task> ClosePageRequested = delegate { return Task.CompletedTask; };
 
-        public ViewPlansViewModel()
+        public ViewPlansViewModel(string? clientId, string? tenantId, string? clientSecret, string? driveId)
         {
-            _graphService = new GraphService();
+            _graphService = new GraphService(clientId, tenantId, clientSecret, driveId);
 
             LoadPlansCommand = new Command(async () => await LoadPlansAsync());
             FilterPlansCommand = new Command<string>(async (col) => await FilterPlansAsync(col));

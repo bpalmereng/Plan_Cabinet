@@ -10,14 +10,22 @@ namespace Plan_Cabinet.Sharepoint
 {
     public class GraphService: IDisposable
     {
-        private readonly string _clientId = Environment.GetEnvironmentVariable("GRAPH_CLIENT_ID");
-        private readonly string _tenantId = Environment.GetEnvironmentVariable("GRAPH_TENANT_ID");
-        private readonly string _clientSecret = Environment.GetEnvironmentVariable("GRAPH_CLIENT_SECRET");
-        private readonly string _driveId = Environment.GetEnvironmentVariable("GRAPH_DRIVE_ID");
+        private readonly string _clientId;
+        private readonly string _tenantId;
+        private readonly string _clientSecret;
+        private readonly string _driveId;
         private static string folderPath = "Plan Cabinet";
         public string? AccessToken { get; private set; }
 
         private GraphServiceClient? _graphClient;
+        // Add a constructor to receive the values
+        public GraphService(string clientId, string tenantId, string clientSecret, string driveId)
+        {
+            _clientId = clientId ?? throw new ArgumentNullException(nameof(clientId));
+            _tenantId = tenantId ?? throw new ArgumentNullException(nameof(tenantId));
+            _clientSecret = clientSecret ?? throw new ArgumentNullException(nameof(clientSecret));
+            _driveId = driveId ?? throw new ArgumentNullException(nameof(driveId));
+        }
 
         public async Task InitializeAsync(CancellationToken ct)
         {

@@ -2,7 +2,13 @@
   "profiles": {
     "Windows Machine": {
       "commandName": "MsixPackage",
-      "nativeDebugging": false
+      "nativeDebugging": false,
+      "environmentVariables": {
+        "GRAPH_CLIENT_ID": "475ccb44-4a52-4bb8-910d-98d1f0fb154d",
+        "GRAPH_TENANT_ID": "dcac29e1-e526-444f-bb85-15583205c205",
+        "GRAPH_CLIENT_SECRET": "Xzg8Q~DeskSqPzfmB4NKMeJT7PCXmxkJNU-.Xcbt",
+        "GRAPH_DRIVE_ID": "b!rlATLtWD50-mMErJ2AcSZFihnrwjzktEgmxHVZ8oTEtjLbxen4hgTJFkW96hPgPq"
+      }
     }
   }
 }

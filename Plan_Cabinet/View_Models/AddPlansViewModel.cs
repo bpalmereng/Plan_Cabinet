@@ -173,10 +173,12 @@ namespace Plan_Cabinet.View_Models
         public event Action ClosePageRequested;
 
 
-        public AddPlansViewModel(INavigation navigation)
+        public AddPlansViewModel(INavigation navigation, string? clientId, string? tenantId, string? clientSecret, string? driveId)
         {
+            
             _navigation = navigation ?? throw new ArgumentNullException(nameof(navigation));
-            _graphService = new GraphService();
+            // Pass the variables to the new constructor
+            _graphService = new GraphService(clientId, tenantId, clientSecret, driveId);
             _cts = new CancellationTokenSource();
 
             // Set default values for properties in the constructor
