@@ -5,25 +5,37 @@ namespace Plan_Cabinet.Views;
 
 public partial class Add_Plans : ContentPage
 {
-    private readonly AddPlansViewModel _viewModel;
+    // Make the ViewModel field nullable to resolve the CS8618 warning.
+    private AddPlansViewModel? _viewModel;
     public Add_Plans()
     {
         InitializeComponent();
 
-        NavigationPage.SetHasNavigationBar(this, false);
-
-        // Assign the ViewModel to a field so it can be accessed for disposal
-        _viewModel = new AddPlansViewModel(this.Navigation);
-        BindingContext = _viewModel;
+        NavigationPage.SetHasNavigationBar(this, false);      
 
         Init(); // wire up UI-specific behavior (focus, gestures)
+      
+    }
+    protected override async void OnAppearing()
+    {
+        base.OnAppearing();
+
+        // Read environment variables here, as they are now available
+        string? clientId = Environment.GetEnvironmentVariable("GRAPH_CLIENT_ID");
+        string? tenantId = Environment.GetEnvironmentVariable("GRAPH_TENANT_ID");
+        string? clientSecret = Environment.GetEnvironmentVariable("GRAPH_CLIENT_SECRET");
+        string? driveId = Environment.GetEnvironmentVariable("GRAPH_DRIVE_ID");
+
+        // Assign the ViewModel to a field and pass the environment variables
+        _viewModel = new AddPlansViewModel(this.Navigation, clientId, tenantId, clientSecret, driveId);
+        BindingContext = _viewModel;
 
         // Subscribe to ViewModel events to handle UI interactions
         _viewModel.ShowAlertRequested += OnShowAlertRequested;
         _viewModel.ShowAlertWithChoiceRequested += OnShowAlertWithChoiceRequested;
         _viewModel.ClosePageRequested += OnClosePageRequested;
+       
     }
-
     void Init()
     {
         // Focus order like original

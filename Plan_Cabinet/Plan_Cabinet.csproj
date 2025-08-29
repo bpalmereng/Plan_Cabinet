@@ -18,7 +18,7 @@
     <SingleProject>true</SingleProject>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
-    <RuntimeIdentifiers>win-x86;win-x64</RuntimeIdentifiers>
+    <RuntimeIdentifiers>win-x64</RuntimeIdentifiers>
 
     <!-- Display name -->
     <ApplicationTitle>Plan_Cabinet</ApplicationTitle>
@@ -47,6 +47,7 @@
     <GenerateTestArtifacts>True</GenerateTestArtifacts>
     <AppInstallerUri>https://bpalmereng.github.io/Plan_Cabinet/</AppInstallerUri>
     <HoursBetweenUpdateChecks>0</HoursBetweenUpdateChecks>
+    <PublishReadyToRun>false</PublishReadyToRun>
     <UserSecretsId>d3c966ef-e108-40ef-9db5-6e7cb2574bbb</UserSecretsId>
     <SkipValidateMauiImplicitPackageReferences>true</SkipValidateMauiImplicitPackageReferences>
   </PropertyGroup>

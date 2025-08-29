@@ -6,19 +6,28 @@ namespace Plan_Cabinet.Views
 {
     public partial class View_Plans : ContentPage
     {
-        private readonly ViewPlansViewModel _viewModel;
+        private ViewPlansViewModel? _viewModel;
 
         public View_Plans()
         {
             InitializeComponent();
-            _viewModel = new ViewPlansViewModel();
-            BindingContext = _viewModel;
+            //_viewModel = new ViewPlansViewModel();
+            //BindingContext = _viewModel;
            
         }
 
         protected override async void OnAppearing()
         {
             base.OnAppearing();
+            // Read environment variables here, as they are now available
+            string? clientId = Environment.GetEnvironmentVariable("GRAPH_CLIENT_ID");
+            string? tenantId = Environment.GetEnvironmentVariable("GRAPH_TENANT_ID");
+            string? clientSecret = Environment.GetEnvironmentVariable("GRAPH_CLIENT_SECRET");
+            string? driveId = Environment.GetEnvironmentVariable("GRAPH_DRIVE_ID");
+
+            _viewModel = new ViewPlansViewModel(clientId, tenantId, clientSecret, driveId);
+            BindingContext = _viewModel;
+
             // Subscribe to VM events here to ensure they are active when the page is shown
             _viewModel.ShowAlertRequested += OnShowAlertRequested;
             _viewModel.ShowAlertWithChoiceRequested += OnShowAlertWithChoiceRequested;
@@ -28,7 +37,7 @@ namespace Plan_Cabinet.Views
             await _viewModel.InitializeAsync();
         }
 
-         protected override void OnDisappearing()
+        protected override void OnDisappearing()
         {
             base.OnDisappearing();
             // Unsubscribe from events to prevent memory leaks
