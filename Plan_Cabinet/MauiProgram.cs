@@ -1,4 +1,5 @@
 ﻿using CommunityToolkit.Maui;
+using Microsoft.Extensions.Logging;
 using Syncfusion.Maui.Core.Hosting;
 
 namespace Plan_Cabinet
