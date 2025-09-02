@@ -25,6 +25,12 @@
 
     <!-- App Identifier -->
     <ApplicationId>com.companyname.plan_cabinet</ApplicationId>
+    
+    <!-- Windows packaging -->
+    <PackageId>PlanCabinet</PackageId>
+    <PackageDisplayName>Plan Cabinet</PackageDisplayName>
+    <ApplicationId>com.companyname.plancabinet</ApplicationId>
+    <ApplicationTitle>Plan Cabinet</ApplicationTitle>
 
     <!-- Versions -->
     <ApplicationDisplayVersion>1.0</ApplicationDisplayVersion>
@@ -50,6 +56,12 @@
     <PublishAot Condition="'$(CI)' == 'true'">true</PublishAot>
     <UserSecretsId>d3c966ef-e108-40ef-9db5-6e7cb2574bbb</UserSecretsId>
     <SkipValidateMauiImplicitPackageReferences>true</SkipValidateMauiImplicitPackageReferences>
+
+    <!-- Force publish-ready output -->
+    <IsPublishable>true</IsPublishable>
+    <SelfContained>true</SelfContained>
+    <PublishTrimmed>false</PublishTrimmed>
+    
   </PropertyGroup>
   
   
