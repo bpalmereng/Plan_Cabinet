@@ -55,8 +55,8 @@ jobs:
             ls -lh "$dir"
           done
 
-          # Check for installer package
-          FILE=$(find "$PUBLISH_DIR" -type f \( -name "*.msixbundle" -o -name "*.msix" \) | head -n 1)
+          # Find the main app MSIX/MSIXBUNDLE (not Dependencies)
+          FILE=$(find "$PUBLISH_DIR" -maxdepth 2 -type f -name "Plan_Cabinet_*.msix*" | head -n 1)
           if [ -z "$FILE" ]; then
             echo "❌ ERROR: No MSIX or MSIXBUNDLE installer found in $PUBLISH_DIR"
             exit 1
