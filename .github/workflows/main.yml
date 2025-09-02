@@ -10,59 +10,67 @@ jobs:
     runs-on: windows-2022
 
     steps:
-    - name: Checkout repository
-      uses: actions/checkout@v4
-      with:
-        fetch-depth: 0
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
-    - name: Set up .NET
-      uses: actions/setup-dotnet@v4
-      with:
-        dotnet-version: '8.0.x'
+      - name: Set up .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
 
-    - name: Install Windows MAUI workloads
-      run: dotnet workload install maui-windows --include-previews
+      - name: Install Windows MAUI workloads
+        run: dotnet workload install maui-windows --include-previews
 
-    - name: Restore dependencies for Windows build
-      run: dotnet restore "Plan_Cabinet/Plan_Cabinet.csproj" --runtime win-x64 /p:PublishReadyToRun=true
+      - name: Restore dependencies for Windows build
+        run: dotnet restore "Plan_Cabinet/Plan_Cabinet.csproj" --runtime win-x64 /p:PublishReadyToRun=true
 
-    - name: Import Signing Certificate
-      shell: pwsh
-      run: |
-        $pfx_base64 = "${{ secrets.PFX_CERTIFICATE_BASE64 }}"
-        $pfx_password = "${{ secrets.PFX_PASSWORD }}"
-        $pfx_bytes = [System.Convert]::FromBase64String($pfx_base64)
-        [System.IO.File]::WriteAllBytes("cert.pfx", $pfx_bytes)
+      - name: Import Signing Certificate
+        shell: pwsh
+        run: |
+          $pfx_base64 = "${{ secrets.PFX_CERTIFICATE_BASE64 }}"
+          $pfx_password = "${{ secrets.PFX_PASSWORD }}"
+          $pfx_bytes = [System.Convert]::FromBase64String($pfx_base64)
+          [System.IO.File]::WriteAllBytes("cert.pfx", $pfx_bytes)
+          $pfx_password_secure = ConvertTo-SecureString -String $pfx_password -AsPlainText -Force
+          Import-PfxCertificate -FilePath "cert.pfx" -CertStoreLocation Cert:\CurrentUser\My -Password $pfx_password_secure
 
-        $pfx_password_secure = ConvertTo-SecureString -String $pfx_password -AsPlainText -Force
-        Import-PfxCertificate -FilePath "cert.pfx" -CertStoreLocation Cert:\CurrentUser\My -Password $pfx_password_secure
+      - name: Build and Package MAUI App for Windows
+        run: dotnet publish "Plan_Cabinet/Plan_Cabinet.csproj" -f net8.0-windows10.0.22000.0 -c Release --no-restore --runtime win-x64 --self-contained true /p:PublishReadyToRun=true /p:Platform=x64 /p:AppxPackageSigningEnabled=true /p:AppxBundle=Always /p:AppxBundlePlatforms=x64
+        env:
+          GRAPH_CLIENT_ID: ${{ secrets.GRAPH_CLIENT_ID }}
+          GRAPH_TENANT_ID: ${{ secrets.GRAPH_TENANT_ID }}
+          GRAPH_CLIENT_SECRET: ${{ secrets.GRAPH_CLIENT_SECRET }}
+          GRAPH_DRIVE_ID: ${{ secrets.GRAPH_DRIVE_ID }}
 
-    - name: Build and Package MAUI App for Windows
-      run: dotnet publish "Plan_Cabinet/Plan_Cabinet.csproj" -f net8.0-windows10.0.22000.0 -c Release --no-restore --runtime win-x64 --self-contained true /p:PublishReadyToRun=true /p:Platform=x64 /p:AppxPackageSigningEnabled=true /p:AppxBundle=Always /p:AppxBundlePlatforms=x64
+      - name: Debug: List Publish Folder Tree with Sizes
+        shell: bash
+        run: |
+          PUBLISH_DIR="$GITHUB_WORKSPACE/Plan_Cabinet/bin/x64/Release/net8.0-windows10.0.22000.0/win-x64/AppPackages"
+          echo "Listing all files in: $PUBLISH_DIR"
+          find "$PUBLISH_DIR" -type d -print0 | while IFS= read -r -d '' dir; do
+            echo "DIR: $dir"
+            ls -lh "$dir"
+          done
 
-      env:
-        GRAPH_CLIENT_ID: ${{ secrets.GRAPH_CLIENT_ID }}
-        GRAPH_TENANT_ID: ${{ secrets.GRAPH_TENANT_ID }}
-        GRAPH_CLIENT_SECRET: ${{ secrets.GRAPH_CLIENT_SECRET }}
-        GRAPH_DRIVE_ID: ${{ secrets.GRAPH_DRIVE_ID }}
+      - name: Find Installer Package
+        id: find_bundle
+        shell: bash
+        run: |
+          FILE=$(find "$GITHUB_WORKSPACE/Plan_Cabinet/bin/x64/Release/net8.0-windows10.0.22000.0/win-x64/AppPackages" -type f \( -name "*.msixbundle" -o -name "*.msix" \) | head -n 1)
+          if [ -z "$FILE" ]; then
+            echo "❌ No installer package (.msixbundle or .msix) found!"
+            exit 1
+          fi
+          echo "bundle_path=$FILE" >> $GITHUB_OUTPUT
 
-    - name: Find Installer Package
-      id: find_bundle
-      shell: bash
-      run: |
-        FILE=$(find $GITHUB_WORKSPACE/Plan_Cabinet/bin/x64/Release/net8.0-windows10.0.22000.0/win-x64/AppPackages -type f \( -name "*.msixbundle" -o -name "*.msix" \) | head -n 1)
-        if [ -z "$FILE" ]; then
-          echo "❌ No installer package (.msixbundle or .msix) found!"
-          exit 1
-        fi
-        echo "bundle_path=$FILE" >> $GITHUB_OUTPUT
-
-    - name: Upload Installer Artifact
-      uses: actions/upload-artifact@v4
-      with:
-        name: Plan_Cabinet-installer
-        path: ${{ steps.find_bundle.outputs.bundle_path }}
-        retention-days: 7
+      - name: Upload Installer Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: Plan_Cabinet-installer
+          path: ${{ steps.find_bundle.outputs.bundle_path }}
+          retention-days: 7
 
   deploy-pages:
     needs: build
@@ -71,6 +79,7 @@ jobs:
       contents: write
       pages: write
       id-token: write
+
     steps:
       - name: Download artifact
         uses: actions/download-artifact@v4
