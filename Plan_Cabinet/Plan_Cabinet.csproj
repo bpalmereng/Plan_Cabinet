@@ -20,6 +20,7 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <!-- Windows Runtime -->
+    <TargetFramework>net8.0-windows10.0.22000.0</TargetFramework>
     <RuntimeIdentifiers>win-x64</RuntimeIdentifiers>
     <SelfContained>true</SelfContained>
     <IsPublishable>true</IsPublishable>
