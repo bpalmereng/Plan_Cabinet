@@ -24,7 +24,7 @@ jobs:
       run: dotnet workload install maui-windows --include-previews
     
     - name: Restore dependencies for Windows build
-      run: dotnet restore "Plan_Cabinet/Plan_Cabinet.csproj" --runtime win-x64
+      run: dotnet restore "Plan_Cabinet/Plan_Cabinet.csproj" --runtime win-x64 /p:PublishReadyToRun=true
 
     - name: Import Signing Certificate
       shell: powershell
