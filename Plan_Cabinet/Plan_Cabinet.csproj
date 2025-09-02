@@ -12,13 +12,17 @@
 		either BOTH runtimes must be indicated or ONLY macatalyst-x64. -->
     <!-- For example: <RuntimeIdentifiers>maccatalyst-x64;maccatalyst-arm64</RuntimeIdentifiers> -->
 
+    <!-- MAUI & App Info -->
     <OutputType>Exe</OutputType>
     <RootNamespace>Plan_Cabinet</RootNamespace>
     <UseMaui>true</UseMaui>
     <SingleProject>true</SingleProject>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
+    <!-- Windows Runtime -->
     <RuntimeIdentifiers>win-x64</RuntimeIdentifiers>
+    <SelfContained>true</SelfContained>
+    <IsPublishable>true</IsPublishable>
 
     <!-- Display name -->
     <ApplicationTitle>Plan_Cabinet</ApplicationTitle>
@@ -53,7 +57,6 @@
     <GenerateTestArtifacts>True</GenerateTestArtifacts>
     <AppInstallerUri>https://bpalmereng.github.io/Plan_Cabinet/</AppInstallerUri>
     <HoursBetweenUpdateChecks>0</HoursBetweenUpdateChecks>
-    <PublishAot Condition="'$(CI)' == 'true'">true</PublishAot>
     <UserSecretsId>d3c966ef-e108-40ef-9db5-6e7cb2574bbb</UserSecretsId>
     <SkipValidateMauiImplicitPackageReferences>true</SkipValidateMauiImplicitPackageReferences>
 
