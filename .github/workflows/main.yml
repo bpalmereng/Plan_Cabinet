@@ -1,4 +1,4 @@
-name: Publish Win-x64 with ReadyToRun
+﻿name: Publish Win-x64 with ReadyToRun
 
 on:
   push:
@@ -46,12 +46,16 @@ jobs:
         GRAPH_CLIENT_SECRET: ${{ secrets.GRAPH_CLIENT_SECRET }}
         GRAPH_DRIVE_ID: ${{ secrets.GRAPH_DRIVE_ID }}
       
-    - name: Find MSIX Bundle
+    - name: Find Installer Package
       id: find_bundle
       shell: bash
       run: |
-        BUNDLE=$(find $GITHUB_WORKSPACE/Plan_Cabinet/bin/x64/Release/net8.0-windows10.0.22000.0/win-x64/AppPackages -name "*.msixbundle" | head -n 1)
-        echo "bundle_path=$BUNDLE" >> $GITHUB_OUTPUT
+        FILE=$(find $GITHUB_WORKSPACE/Plan_Cabinet/bin/x64/Release/net8.0-windows10.0.22000.0/win-x64/AppPackages -type f \( -name "*.msixbundle" -o -name "*.msix" \) | head -n 1)
+        if [ -z "$FILE" ]; then
+          echo "❌ No installer package (.msixbundle or .msix) found!"
+          exit 1
+        fi
+        echo "bundle_path=$FILE" >> $GITHUB_OUTPUT
 
     - name: Upload Installer Artifact
       uses: actions/upload-artifact@v4
@@ -75,7 +79,7 @@ jobs:
 
       - name: Create index.html with download link
         run: |
-          FILE=$(ls *.msixbundle | head -n 1)
+          FILE=$(ls *.msixbundle *.msix 2>/dev/null | head -n 1)
           echo "<html><body><h1>Plan_Cabinet Installer</h1><p><a href=\"$FILE\">Download Installer</a></p></body></html>" > index.html
 
       - name: Setup Pages
