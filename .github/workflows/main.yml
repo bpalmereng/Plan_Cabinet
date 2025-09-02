@@ -1,4 +1,4 @@
-name: Publish Win-x64 with Native AOT
+name: Publish Win-x64 with ReadyToRun
 
 on:
   push:
@@ -39,25 +39,32 @@ jobs:
         Import-PfxCertificate -FilePath "cert.pfx" -CertStoreLocation Cert:\CurrentUser\My -Password $pfx_password_secure
 
     - name: Build and Package MAUI App for Windows
-      run: dotnet publish "Plan_Cabinet/Plan_Cabinet.csproj" -f net8.0-windows10.0.22000.0 -c Release --no-restore --runtime win-x64 --self-contained true /p:PublishAot=true /p:Platform=x64 /p:AppxPackageSigningEnabled=true
+      run: dotnet publish "Plan_Cabinet/Plan_Cabinet.csproj" -f net8.0-windows10.0.22000.0 -c Release --no-restore --runtime win-x64 --self-contained true /p:PublishReadyToRun=true /p:Platform=x64 /p:AppxPackageSigningEnabled=true
       env:
         GRAPH_CLIENT_ID: ${{ secrets.GRAPH_CLIENT_ID }}
         GRAPH_TENANT_ID: ${{ secrets.GRAPH_TENANT_ID }}
         GRAPH_CLIENT_SECRET: ${{ secrets.GRAPH_CLIENT_SECRET }}
         GRAPH_DRIVE_ID: ${{ secrets.GRAPH_DRIVE_ID }}
       
-    - name: Upload Artifact
+    - name: Find MSIX Bundle
+      id: find_bundle
+      shell: bash
+      run: |
+        BUNDLE=$(find $GITHUB_WORKSPACE/Plan_Cabinet/bin/x64/Release/net8.0-windows10.0.22000.0/win-x64/AppPackages -name "*.msixbundle" | head -n 1)
+        echo "bundle_path=$BUNDLE" >> $GITHUB_OUTPUT
+
+    - name: Upload Installer Artifact
       uses: actions/upload-artifact@v4
       with:
         name: Plan_Cabinet-installer
-        path: ${{ github.workspace }}/Plan_Cabinet/bin/x64/Release/net8.0-windows10.0.22000.0/win-x64/AppPackages
+        path: ${{ steps.find_bundle.outputs.bundle_path }}
         retention-days: 7
 
   deploy-pages:
     needs: build
     runs-on: ubuntu-latest
     permissions:
-      contents: write  # Add this line
+      contents: write
       pages: write
       id-token: write
     steps:
@@ -65,12 +72,20 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: Plan_Cabinet-installer
+
+      - name: Create index.html with download link
+        run: |
+          FILE=$(ls *.msixbundle | head -n 1)
+          echo "<html><body><h1>Plan_Cabinet Installer</h1><p><a href=\"$FILE\">Download Installer</a></p></body></html>" > index.html
+
       - name: Setup Pages
         uses: actions/configure-pages@v5
+
       - name: Upload artifact to GitHub Pages
         uses: actions/upload-pages-artifact@v3
         with:
           path: .
+
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
