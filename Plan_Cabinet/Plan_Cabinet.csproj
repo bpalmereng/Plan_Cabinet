@@ -24,6 +24,11 @@
     <RuntimeIdentifiers>win-x64</RuntimeIdentifiers>
     <SelfContained>true</SelfContained>
     <IsPublishable>true</IsPublishable>
+    <PublishReadyToRun>true</PublishReadyToRun>
+    <PropertyGroup>
+      <AppxBundle>Always</AppxBundle>
+      <AppxBundlePlatforms>x64</AppxBundlePlatforms>
+    </PropertyGroup>
 
     <!-- Display name -->
     <ApplicationTitle>Plan_Cabinet</ApplicationTitle>
