@@ -38,15 +38,7 @@ jobs:
         Import-PfxCertificate -FilePath "cert.pfx" -CertStoreLocation Cert:\CurrentUser\My -Password $pfx_password_secure
 
     - name: Build and Package MAUI App for Windows
-      run: dotnet publish "Plan_Cabinet/Plan_Cabinet.csproj" \
-        -f net8.0-windows10.0.22000.0 \
-        -c Release \
-        --no-restore \
-        --runtime win10-x64 \
-        --self-contained true \
-        /p:PublishReadyToRun=true \
-        /p:Platform=x64 \
-        /p:AppxPackageSigningEnabled=true
+      run: dotnet publish "Plan_Cabinet/Plan_Cabinet.csproj" -f net8.0-windows10.0.22000.0 -c Release --no-restore --runtime win10-x64 --self-contained true /p:PublishReadyToRun=true /p:Platform=x64 /p:AppxPackageSigningEnabled=true
       env:
         GRAPH_CLIENT_ID: ${{ secrets.GRAPH_CLIENT_ID }}
         GRAPH_TENANT_ID: ${{ secrets.GRAPH_TENANT_ID }}
