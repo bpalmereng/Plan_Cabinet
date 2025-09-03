@@ -38,10 +38,10 @@
         <uap:SplashScreen Image="$placeholder$.png" />
       </uap:VisualElements>
       <Extensions>
-    <desktop7:Extension Category="windows.shortcut">
-        <desktop7:Shortcut Title="Plan Cabinet" Icon="appicon.png" />
-    </desktop7:Extension>
-</Extensions>
+        <desktop7:Extension Category="windows.shortcut">
+          <desktop7:Shortcut Icon="Assets\Square44x44Logo.png" File="$targetnametoken$.exe" />
+        </desktop7:Extension>
+      </Extensions>
     </Application>
   </Applications>
 
