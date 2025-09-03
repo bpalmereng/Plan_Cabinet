@@ -4,6 +4,7 @@
   xmlns:uap="http://schemas.microsoft.com/appx/manifest/uap/windows10"
   xmlns:mp="http://schemas.microsoft.com/appx/2014/phone/manifest"
   xmlns:rescap="http://schemas.microsoft.com/appx/manifest/foundation/windows10/restrictedcapabilities"
+  xmlns:desktop7="http://schemas.microsoft.com/appx/manifest/desktop/windows10/7"
   IgnorableNamespaces="uap rescap">
 
   <Identity Name="maui-package-name-placeholder" Publisher="CN=Brian Palmer - TCPW" Version="1.0.3.0" />
@@ -35,6 +36,9 @@
         BackgroundColor="transparent">
         <uap:DefaultTile Square71x71Logo="$placeholder$.png" Wide310x150Logo="$placeholder$.png" Square310x310Logo="$placeholder$.png" />
         <uap:SplashScreen Image="$placeholder$.png" />
+        <Extensions>
+          <desktop7:Extension Category="windows.shortcut" />
+        </Extensions>
       </uap:VisualElements>
     </Application>
   </Applications>

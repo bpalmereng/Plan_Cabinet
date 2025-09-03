@@ -78,27 +78,19 @@ jobs:
           "@
           Set-Content -Path $appInstallerPath -Value $appInstallerXml -Encoding UTF8
 
-          # PowerShell installer script
-          $psScript = @"
-          Write-Host 'Installing certificate...'
-          `$cert = New-Object System.Security.Cryptography.X509Certificates.X509Certificate2('.\$($cer.Name)')
-          `$store = New-Object System.Security.Cryptography.X509Certificates.X509Store('TrustedPeople', 'CurrentUser')
-          `$store.Open('ReadWrite')
-          `$existing = `$store.Certificates | Where-Object { `$_.Thumbprint -eq `$cert.Thumbprint }
-          foreach (`$c in `$existing) { `$store.Remove(`$c) }
-          `$store.Add(`$cert)
-          `$store.Close()
-          Write-Host 'Certificate installed'
-          Write-Host 'Installing app package...'
-          Add-AppxPackage -Path '.\$($appxFilename)' -ForceApplicationShutdown
-          Write-Host 'App installed successfully!'
-          "@
-          Set-Content -Path "$appDir\Install-App.ps1" -Value $psScript -Encoding UTF8
-
           # Batch installer
           $batScript = @"
           @echo off
-          powershell -ExecutionPolicy Bypass -File "%~dp0Install-App.ps1"
+          echo Checking for Windows App SDK Runtime...
+          powershell -Command "if (-not (Get-AppxPackage -Name Microsoft.WindowsAppRuntime.1.4)) { Write-Host 'Windows App SDK Runtime not found. Downloading and installing...'; Invoke-WebRequest -Uri 'https://aka.ms/windowsappsdk/1.4/1.4.7/windowsappruntimeinstaller.exe' -OutFile 'windowsappruntimeinstaller.exe'; Start-Process -FilePath 'windowsappruntimeinstaller.exe' -ArgumentList '-quiet' -Wait; Remove-Item 'windowsappruntimeinstaller.exe' }"
+
+          echo Installing certificate...
+          powershell -ExecutionPolicy Bypass -Command "Add-Type -AssemblyName System.Security; `$cert = New-Object System.Security.Cryptography.X509Certificates.X509Certificate2('.\$($cer.Name)'); `$store = New-Object System.Security.Cryptography.X509Certificates.X509Store('TrustedPeople', 'CurrentUser'); `$store.Open('ReadWrite'); `$existing = `$store.Certificates | Where-Object { `$_.Thumbprint -eq `$cert.Thumbprint }; foreach (`$c in `$existing) { `$store.Remove(`$c) }; `$store.Add(`$cert); `$store.Close(); Write-Host 'Certificate installed.'"
+
+          echo Launching app installer...
+          start "" "Plan_Cabinet.appinstaller"
+
+          echo Installation process launched.
           pause
           "@
           Set-Content -Path "$appDir\Install-App.bat" -Value $batScript -Encoding ASCII
