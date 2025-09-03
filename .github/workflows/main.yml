@@ -36,36 +36,13 @@ jobs:
       - name: Build and Package MAUI App for Windows
         shell: pwsh
         run: |
-          $buildNumber = $env:GITHUB_RUN_NUMBER
-          $displayVersion = "1.0.$buildNumber"
-          $appVersion = "1.$buildNumber"
-          
-          dotnet publish "Plan_Cabinet/Plan_Cabinet.csproj" `
-            -f net8.0-windows10.0.22000.0 `
-            -c Release `
-            --runtime win-x64 `
-            --self-contained true `
-            /p:PublishReadyToRun=true `
-            /p:Platform=x64 `
-            /p:AppxPackageSigningEnabled=true `
-            /p:AppxBundle=Always `
-            /p:AppxBundlePlatforms=x64 `
-            /p:ApplicationDisplayVersion=$displayVersion `
-            /p:ApplicationVersion=$appVersion
-        env:
-          GRAPH_CLIENT_ID: ${{ secrets.GRAPH_CLIENT_ID }}
-          GRAPH_TENANT_ID: ${{ secrets.GRAPH_TENANT_ID }}
-          GRAPH_CLIENT_SECRET: ${{ secrets.GRAPH_CLIENT_SECRET }}
-          GRAPH_DRIVE_ID: ${{ secrets.GRAPH_DRIVE_ID }}
+          dotnet publish -f net8.0-windows10.0.22000.0 -c Release -p:WindowsPackageType=MSIX -p:RuntimeIdentifier=win-x64 -p:PublishReadyToRun=true --self-contained true
 
       - name: Find Installer Package
         id: find_bundle
         shell: pwsh
         run: |
-          $file = Get-ChildItem "Plan_Cabinet/bin/x64/Release/net8.0-windows10.0.22000.0/win-x64/AppPackages" -Recurse -Include *.msixbundle | Select-Object -First 1
-          if (-not $file) {
-              $file = Get-ChildItem "Plan_Cabinet/bin/x64/Release/net8.0-windows10.0.22000.0/win-x64/AppPackages" -Recurse -Include *.msix | Where-Object { $_.BaseName -notlike "*Dependencies*" } | Select-Object -First 1
-          }
+          $file = Get-ChildItem "Plan_Cabinet/bin/x64/Release/net8.0-windows10.0.22000.0/win-x64/AppPackages" -Recurse -Include *.msixbundle,*.msix | Where-Object { $_.DirectoryName -notlike "*Dependencies*" } | Select-Object -First 1
           if (-not $file) { Write-Error "❌ No installer package found!"; exit 1 }
           echo "bundle_path=$($file.FullName)" >> $env:GITHUB_OUTPUT
 
@@ -76,20 +53,11 @@ jobs:
           $appDir = Split-Path "${{ steps.find_bundle.outputs.bundle_path }}" -Parent
           Write-Host "App directory: $appDir"
 
-          $msix = Get-ChildItem $appDir -Filter "*.msix" | Select-Object -First 1
+          $appxFilename = [System.IO.Path]::GetFileName("${{ steps.find_bundle.outputs.bundle_path }}")
           $cer  = Get-ChildItem $appDir -Filter "*.cer" | Select-Object -First 1
-          $msixbundle = Get-ChildItem $appDir -Filter "*.msixbundle" | Select-Object -First 1
-
-          if ($msixbundle) {
-              $appxFilename = $msixbundle.Name
-          } elseif ($msix) {
-              $appxFilename = $msix.Name
-          } else {
-              Write-Error "❌ No MSIX or MSIXBUNDLE found"; exit 1
-          }
 
           if (-not $cer)  { Write-Error "❌ No certificate (.cer) found"; exit 1 }
-
+          
           # Use GitHub run number for version
           $buildNumber = $env:GITHUB_RUN_NUMBER
           $version = "1.0.$buildNumber.0"
@@ -170,7 +138,7 @@ jobs:
       - name: Setup Pages
         uses: actions/configure-pages@v5
 
-      - name: Upload artifact to GitHub Pages
+      - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v3
         with:
           path: .
