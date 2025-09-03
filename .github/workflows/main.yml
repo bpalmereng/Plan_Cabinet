@@ -23,9 +23,6 @@ jobs:
       - name: Install Windows MAUI workloads
         run: dotnet workload install maui-windows --include-previews
 
-      - name: Restore dependencies
-        run: dotnet restore "Plan_Cabinet/Plan_Cabinet.csproj" --runtime win-x64 /p:PublishReadyToRun=true
-
       - name: Import Signing Certificate
         shell: pwsh
         run: |
@@ -37,18 +34,24 @@ jobs:
           Import-PfxCertificate -FilePath "cert.pfx" -CertStoreLocation Cert:\CurrentUser\My -Password $pfx_password_secure
 
       - name: Build and Package MAUI App for Windows
+        shell: pwsh
         run: |
+          $buildNumber = $env:GITHUB_RUN_NUMBER
+          $displayVersion = "1.0.$buildNumber"
+          $appVersion = "1.$buildNumber"
+          
           dotnet publish "Plan_Cabinet/Plan_Cabinet.csproj" `
             -f net8.0-windows10.0.22000.0 `
             -c Release `
-            --no-restore `
             --runtime win-x64 `
             --self-contained true `
             /p:PublishReadyToRun=true `
             /p:Platform=x64 `
             /p:AppxPackageSigningEnabled=true `
             /p:AppxBundle=Always `
-            /p:AppxBundlePlatforms=x64
+            /p:AppxBundlePlatforms=x64 `
+            /p:ApplicationDisplayVersion=$displayVersion `
+            /p:ApplicationVersion=$appVersion
         env:
           GRAPH_CLIENT_ID: ${{ secrets.GRAPH_CLIENT_ID }}
           GRAPH_TENANT_ID: ${{ secrets.GRAPH_TENANT_ID }}
@@ -63,11 +66,10 @@ jobs:
           if (-not $file) { Write-Error "❌ No installer package (.msix) found!"; exit 1 }
           echo "bundle_path=$($file.FullName)" >> $env:GITHUB_OUTPUT
 
-      - name: Bundle Installer Files
+      - name: Bundle Installer Files and Generate .appinstaller
         id: bundle
         shell: pwsh
         run: |
-          # Get app directory
           $appDir = Split-Path "${{ steps.find_bundle.outputs.bundle_path }}" -Parent
           Write-Host "App directory: $appDir"
 
@@ -77,42 +79,51 @@ jobs:
           if (-not $msix) { Write-Error "❌ No MSIX found"; exit 1 }
           if (-not $cer)  { Write-Error "❌ No certificate (.cer) found"; exit 1 }
 
-          # Generate PowerShell installer script
-          $psScript = '
-          Write-Host "Installing certificate for current user..."
+          # Use GitHub run number for version
+          $buildNumber = $env:GITHUB_RUN_NUMBER
+          $version = "1.0.$buildNumber.0"
 
-          # Load the certificate
-          $cert = New-Object System.Security.Cryptography.X509Certificates.X509Certificate2(".\$($cer.Name)")
+          # Generate .appinstaller file
+          $appInstallerPath = Join-Path $appDir "Plan_Cabinet.appinstaller"
+          $msixUri = "https://bpalmereng.github.io/Plan_Cabinet/$($msix.Name)"
+          $appInstallerXml = @"
+          <?xml version="1.0" encoding="utf-8"?>
+          <AppInstaller Uri="$msixUri" Version="$version" xmlns="http://schemas.microsoft.com/appx/appinstaller/2017/2">
+          <MainPackage Name="PlanCabinet" Publisher="CN=Brian Palmer - TCPW" Version="$version" Uri="$msixUri" />
+          <UpdateSettings>
+          <OnLaunch HoursBetweenUpdateChecks="0" />
+          <AutomaticBackgroundTask />
+          </UpdateSettings>
+          </AppInstaller>
+          "@
+          Set-Content -Path $appInstallerPath -Value $appInstallerXml -Encoding UTF8
 
-          # Open CurrentUser\TrustedPeople store
-          $store = New-Object System.Security.Cryptography.X509Certificates.X509Store("TrustedPeople", "CurrentUser")
-          $store.Open("ReadWrite")
-
-          # Remove existing certs with same thumbprint
-          $existing = $store.Certificates | Where-Object { $_.Thumbprint -eq $cert.Thumbprint }
-          foreach ($c in $existing) { $store.Remove($c) }
-
-          # Add new certificate
-          $store.Add($cert)
-          $store.Close()
-          Write-Host "✅ Certificate installed in CurrentUser\TrustedPeople (old certs removed if any)"
-
-          # Install the app package
-          Write-Host "Installing app package..."
-          Add-AppxPackage -Path ".\$($msix.Name)" -ForceApplicationShutdown
-          Write-Host "✅ App installed successfully!"
-          '
-
+          # PowerShell installer script
+          $psScript = @"
+          Write-Host 'Installing certificate...'
+          \$cert = New-Object System.Security.Cryptography.X509Certificates.X509Certificate2('.\$($cer.Name)')
+          \$store = New-Object System.Security.Cryptography.X509Certificates.X509Store('TrustedPeople', 'CurrentUser')
+          \$store.Open('ReadWrite')
+          \$existing = \$store.Certificates | Where-Object { \$_.Thumbprint -eq \$cert.Thumbprint }
+          foreach (\$c in \$existing) { \$store.Remove(\$c) }
+          \$store.Add(\$cert)
+          \$store.Close()
+          Write-Host 'Certificate installed'
+          Write-Host 'Installing app package...'
+          Add-AppxPackage -Path '.\$($msix.Name)' -ForceApplicationShutdown
+          Write-Host 'App installed successfully!'
+          "@
           Set-Content -Path "$appDir\Install-App.ps1" -Value $psScript -Encoding UTF8
 
-          # Generate batch file
-          $batScript = '@echo off
+          # Batch installer
+          $batScript = @"
+          @echo off
           powershell -ExecutionPolicy Bypass -File "%~dp0Install-App.ps1"
           pause
-          '
+          "@
           Set-Content -Path "$appDir\Install-App.bat" -Value $batScript -Encoding ASCII
 
-          # Zip installer files
+          # Zip all installer files
           $zipPath = "$appDir\Plan_Cabinet_Installer.zip"
           Add-Type -AssemblyName 'System.IO.Compression.FileSystem'
           [System.IO.Compression.ZipFile]::CreateFromDirectory($appDir, $zipPath)

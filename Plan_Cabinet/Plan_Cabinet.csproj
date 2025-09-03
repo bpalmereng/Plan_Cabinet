@@ -1,7 +1,9 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>net8.0-windows10.0.22000.0</TargetFramework>
+    <TargetFrameworks Condition="$([MSBuild]::IsOSPlatform('windows'))">$(TargetFrameworks);net8.0-windows10.0.22000.0</TargetFrameworks>
+    <TargetPlatformVersion>10.0.22000.0</TargetPlatformVersion>
+
     <OutputType>Exe</OutputType>
     <RootNamespace>Plan_Cabinet</RootNamespace>
     <UseMaui>true</UseMaui>
@@ -9,27 +11,23 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <RuntimeIdentifiers>win-x64</RuntimeIdentifiers>
-    <SelfContained>true</SelfContained>
-    <IsPublishable>true</IsPublishable>
 
-    <!-- Windows packaging -->
-    <PublishReadyToRun>true</PublishReadyToRun>
-    <AppxBundle>Always</AppxBundle>
-    <AppxBundlePlatforms>x64</AppxBundlePlatforms>
+    <!-- Display name -->
+    <ApplicationTitle>Plan_Cabinet</ApplicationTitle>
 
-    <!-- App info -->
-    <ApplicationTitle>Plan Cabinet</ApplicationTitle>
-    <ApplicationId>com.companyname.plancabinet</ApplicationId>
-    <PackageId>PlanCabinet</PackageId>
-    <PackageDisplayName>Plan Cabinet</PackageDisplayName>
+    <!-- App Identifier -->
+    <ApplicationId>com.companyname.plan_cabinet</ApplicationId>
 
     <!-- Versions -->
     <ApplicationDisplayVersion>1.0</ApplicationDisplayVersion>
     <ApplicationVersion>1</ApplicationVersion>
 
+    <SupportedOSPlatformVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'ios'">11.0</SupportedOSPlatformVersion>
+    <SupportedOSPlatformVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'maccatalyst'">13.1</SupportedOSPlatformVersion>
+    <SupportedOSPlatformVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'android'">21.0</SupportedOSPlatformVersion>
     <SupportedOSPlatformVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'windows'">10.0.17763.0</SupportedOSPlatformVersion>
     <TargetPlatformMinVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'windows'">10.0.17763.0</TargetPlatformMinVersion>
-
+    <SupportedOSPlatformVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'tizen'">6.5</SupportedOSPlatformVersion>
     <Platforms>AnyCPU;x64</Platforms>
     <DefaultLanguage>en</DefaultLanguage>
     <GenerateAppInstallerFile>True</GenerateAppInstallerFile>
@@ -43,12 +41,9 @@
     <HoursBetweenUpdateChecks>0</HoursBetweenUpdateChecks>
     <UserSecretsId>d3c966ef-e108-40ef-9db5-6e7cb2574bbb</UserSecretsId>
     <SkipValidateMauiImplicitPackageReferences>true</SkipValidateMauiImplicitPackageReferences>
-
-    <!-- Force publish-ready output -->
-    <PublishTrimmed>false</PublishTrimmed>
   </PropertyGroup>
-  
-  
+
+
   <PropertyGroup Condition="'$(Configuration)|$(TargetFramework)|$(Platform)'=='Debug|net8.0-android|AnyCPU'">
     <ApplicationId>com.companyname.plancabinet</ApplicationId>
   </PropertyGroup>
