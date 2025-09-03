@@ -56,12 +56,11 @@ jobs:
 
           $appxFilename = [System.IO.Path]::GetFileName("${{ steps.find_bundle.outputs.bundle_path }}")
           $cer  = Get-ChildItem $appDir -Filter "*.cer" | Select-Object -First 1
-
           if (-not $cer)  { Write-Error "❌ No certificate (.cer) found"; exit 1 }
           
-          # Use GitHub run number for version
-          $buildNumber = $env:GITHUB_RUN_NUMBER
-          $version = "1.0.$buildNumber.0"
+          # Extract version from the appx filename
+          $version = ($appxFilename -split "_")[1]
+          Write-Host "Detected version: $version"
 
           # Generate .appinstaller file
           $appInstallerPath = Join-Path $appDir "Plan_Cabinet.appinstaller"
@@ -95,13 +94,13 @@ jobs:
           "@
           Set-Content -Path "$appDir\Install-App.bat" -Value $batScript -Encoding ASCII
 
-          # Zip all installer files
-          $zipPath = "$parentDir\Plan_Cabinet_Installer.zip"
+          # Zip all installer files with version in the name
+          $zipPath = "$parentDir\Plan_Cabinet_Installer-$version.zip"
           Add-Type -AssemblyName 'System.IO.Compression.FileSystem'
           [System.IO.Compression.ZipFile]::CreateFromDirectory($appDir, $zipPath)
 
           echo "bundle_zip=$zipPath" >> $env:GITHUB_OUTPUT
-
+      
       - name: Upload Installer Zip
         uses: actions/upload-artifact@v4
         with:
