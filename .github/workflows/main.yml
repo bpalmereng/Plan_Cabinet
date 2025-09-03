@@ -62,8 +62,11 @@ jobs:
         id: find_bundle
         shell: pwsh
         run: |
-          $file = Get-ChildItem "Plan_Cabinet/bin/x64/Release/net8.0-windows10.0.22000.0/win-x64/AppPackages" -Recurse -Include *.msix | Select-Object -First 1
-          if (-not $file) { Write-Error "❌ No installer package (.msix) found!"; exit 1 }
+          $file = Get-ChildItem "Plan_Cabinet/bin/x64/Release/net8.0-windows10.0.22000.0/win-x64/AppPackages" -Recurse -Include *.msixbundle | Select-Object -First 1
+          if (-not $file) {
+              $file = Get-ChildItem "Plan_Cabinet/bin/x64/Release/net8.0-windows10.0.22000.0/win-x64/AppPackages" -Recurse -Include *.msix | Where-Object { $_.BaseName -notlike "*Dependencies*" } | Select-Object -First 1
+          }
+          if (-not $file) { Write-Error "❌ No installer package found!"; exit 1 }
           echo "bundle_path=$($file.FullName)" >> $env:GITHUB_OUTPUT
 
       - name: Bundle Installer Files and Generate .appinstaller
@@ -75,8 +78,16 @@ jobs:
 
           $msix = Get-ChildItem $appDir -Filter "*.msix" | Select-Object -First 1
           $cer  = Get-ChildItem $appDir -Filter "*.cer" | Select-Object -First 1
+          $msixbundle = Get-ChildItem $appDir -Filter "*.msixbundle" | Select-Object -First 1
 
-          if (-not $msix) { Write-Error "❌ No MSIX found"; exit 1 }
+          if ($msixbundle) {
+              $appxFilename = $msixbundle.Name
+          } elseif ($msix) {
+              $appxFilename = $msix.Name
+          } else {
+              Write-Error "❌ No MSIX or MSIXBUNDLE found"; exit 1
+          }
+
           if (-not $cer)  { Write-Error "❌ No certificate (.cer) found"; exit 1 }
 
           # Use GitHub run number for version
@@ -85,7 +96,7 @@ jobs:
 
           # Generate .appinstaller file
           $appInstallerPath = Join-Path $appDir "Plan_Cabinet.appinstaller"
-          $msixUri = "https://bpalmereng.github.io/Plan_Cabinet/$($msix.Name)"
+          $msixUri = "https://bpalmereng.github.io/Plan_Cabinet/$appxFilename"
           $appInstallerXml = @"
           <?xml version="1.0" encoding="utf-8"?>
           <AppInstaller Uri="$msixUri" Version="$version" xmlns="http://schemas.microsoft.com/appx/appinstaller/2017/2">
@@ -101,16 +112,16 @@ jobs:
           # PowerShell installer script
           $psScript = @"
           Write-Host 'Installing certificate...'
-          \$cert = New-Object System.Security.Cryptography.X509Certificates.X509Certificate2('.\$($cer.Name)')
-          \$store = New-Object System.Security.Cryptography.X509Certificates.X509Store('TrustedPeople', 'CurrentUser')
-          \$store.Open('ReadWrite')
-          \$existing = \$store.Certificates | Where-Object { \$_.Thumbprint -eq \$cert.Thumbprint }
-          foreach (\$c in \$existing) { \$store.Remove(\$c) }
-          \$store.Add(\$cert)
-          \$store.Close()
+          `$cert = New-Object System.Security.Cryptography.X509Certificates.X509Certificate2('.\$($cer.Name)')
+          `$store = New-Object System.Security.Cryptography.X509Certificates.X509Store('TrustedPeople', 'CurrentUser')
+          `$store.Open('ReadWrite')
+          `$existing = `$store.Certificates | Where-Object { `$_.Thumbprint -eq `$cert.Thumbprint }
+          foreach (`$c in `$existing) { `$store.Remove(`$c) }
+          `$store.Add(`$cert)
+          `$store.Close()
           Write-Host 'Certificate installed'
           Write-Host 'Installing app package...'
-          Add-AppxPackage -Path '.\$($msix.Name)' -ForceApplicationShutdown
+          Add-AppxPackage -Path '.\$($appxFilename)' -ForceApplicationShutdown
           Write-Host 'App installed successfully!'
           "@
           Set-Content -Path "$appDir\Install-App.ps1" -Value $psScript -Encoding UTF8
