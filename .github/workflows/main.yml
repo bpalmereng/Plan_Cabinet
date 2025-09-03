@@ -49,20 +49,62 @@ jobs:
           if (-not $file) { Write-Error "❌ No installer package found!"; exit 1 }
           echo "bundle_path=$($file.FullName)" >> $env:GITHUB_OUTPUT
 
-      - name: Generate App Installer and Get Certificate
+      - name: Extract Package Identity
+        id: extract_identity
+        shell: pwsh
+        run: |
+          $packagePath = "${{ steps.find_bundle.outputs.bundle_path }}"
+          # Add-AppxPackage is required to use Get-AppxPackageManifest, but we don't install it.
+          # Instead, we can unzip the file and read the manifest directly.
+          # Create a temporary directory
+          $tempDir = New-Item -ItemType Directory -Path (Join-Path $env:TEMP 'temp_unzip')
+          Expand-Archive -Path $packagePath -DestinationPath $tempDir
+          $manifestFile = Join-Path $tempDir 'AppxManifest.xml'
+          
+          if (-not (Test-Path $manifestFile)) {
+              Write-Host "AppxManifest.xml not found directly. Checking for nested packages..."
+              # For msixbundle, the manifest is in the architecture-specific subfolder
+              $nestedManifest = Get-ChildItem -Path $tempDir -Filter 'AppxManifest.xml' -Recurse | Select-Object -First 1
+              if ($nestedManifest) {
+                  $manifestFile = $nestedManifest.FullName
+              } else {
+                  Write-Error "❌ AppxManifest.xml not found in the package."
+                  exit 1
+              }
+          }
+
+          $manifestXml = [xml](Get-Content -Path $manifestFile)
+          $ns = @{ p = 'http://schemas.microsoft.com/appx/manifest/foundation/windows10' }
+          $identityNode = $manifestXml.SelectSingleNode('//p:Identity', $ns)
+          
+          if ($identityNode) {
+              $packageName = $identityNode.GetAttribute('Name')
+              $publisherName = $identityNode.GetAttribute('Publisher')
+              echo "package_name=$packageName" >> $env:GITHUB_OUTPUT
+              echo "publisher_name=$publisherName" >> $env:GITHUB_OUTPUT
+              Write-Host "✅ Extracted Name: $packageName, Publisher: $publisherName"
+          } else {
+              Write-Error "❌ Identity element not found in manifest."
+              exit 1
+          }
+
+      - name: Generate App Installer
         id: generate_installer
         shell: pwsh
         run: |
           $appDir = Split-Path "${{ steps.find_bundle.outputs.bundle_path }}" -Parent
-          Write-Host "App directory: $appDir"
-
           $appxFilename = [System.IO.Path]::GetFileName("${{ steps.find_bundle.outputs.bundle_path }}")
+          
+          # The certificate is already in the same directory as the bundle
           $cer = Get-ChildItem $appDir -Filter "*.cer" | Select-Object -First 1
           if (-not $cer) { Write-Error "❌ No certificate (.cer) found"; exit 1 }
           
           # Use the same version from the build step
           $version = ($appxFilename -split "_")[1]
-          Write-Host "Detected version: $version"
+          
+          # Use the dynamically extracted package name and publisher
+          $packageName = "${{ steps.extract_identity.outputs.package_name }}"
+          $publisherName = "${{ steps.extract_identity.outputs.publisher_name }}"
 
           # Generate .appinstaller file
           $appInstallerPath = Join-Path $appDir "Plan_Cabinet.appinstaller"
@@ -70,7 +112,7 @@ jobs:
           $appInstallerXml = @"
           <?xml version="1.0" encoding="utf-8"?>
           <AppInstaller Uri="$msixUri" Version="$version" xmlns="http://schemas.microsoft.com/appx/appinstaller/2017/2">
-            <MainPackage Name="com.companyname.plan_cabinet" Publisher="CN=Brian Palmer - TCPW" Version="$version" Uri="$msixUri" />
+            <MainPackage Name="$packageName" Publisher="$publisherName" Version="$version" Uri="$msixUri" />
             <UpdateSettings>
               <OnLaunch HoursBetweenUpdateChecks="0" />
               <AutomaticBackgroundTask />
