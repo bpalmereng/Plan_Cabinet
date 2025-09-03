@@ -51,6 +51,7 @@ jobs:
         shell: pwsh
         run: |
           $appDir = Split-Path "${{ steps.find_bundle.outputs.bundle_path }}" -Parent
+          $parentDir = Split-Path $appDir -Parent
           Write-Host "App directory: $appDir"
 
           $appxFilename = [System.IO.Path]::GetFileName("${{ steps.find_bundle.outputs.bundle_path }}")
@@ -103,7 +104,7 @@ jobs:
           Set-Content -Path "$appDir\Install-App.bat" -Value $batScript -Encoding ASCII
 
           # Zip all installer files
-          $zipPath = "$appDir\Plan_Cabinet_Installer.zip"
+          $zipPath = "$parentDir\Plan_Cabinet_Installer.zip"
           Add-Type -AssemblyName 'System.IO.Compression.FileSystem'
           [System.IO.Compression.ZipFile]::CreateFromDirectory($appDir, $zipPath)
 
