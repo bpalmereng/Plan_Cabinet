@@ -1,4 +1,4 @@
-﻿name: Publish Win-x64 with ReadyToRun
+﻿name: Publish Win-x64 with App Installer
 
 on:
   push:
@@ -36,7 +36,10 @@ jobs:
       - name: Build and Package MAUI App for Windows
         shell: pwsh
         run: |
-          dotnet publish -f net8.0-windows10.0.22000.0 -c Release -p:WindowsPackageType=MSIX -p:RuntimeIdentifier=win-x64 -p:Platform=x64 -p:PublishReadyToRun=false --self-contained true
+          # Use the GitHub Actions run number for the app version
+          $appVersion = "1.0.$($env:GITHUB_RUN_NUMBER).0"
+          
+          dotnet publish -f net8.0-windows10.0.22000.0 -c Release -p:WindowsPackageType=MSIX -p:RuntimeIdentifier=win-x64 -p:Platform=x64 -p:PublishReadyToRun=false -p:ApplicationVersion=$appVersion --self-contained true
 
       - name: Find Installer Package
         id: find_bundle
@@ -46,19 +49,18 @@ jobs:
           if (-not $file) { Write-Error "❌ No installer package found!"; exit 1 }
           echo "bundle_path=$($file.FullName)" >> $env:GITHUB_OUTPUT
 
-      - name: Bundle Installer Files and Create Executable
-        id: bundle
+      - name: Generate App Installer and Get Certificate
+        id: generate_installer
         shell: pwsh
         run: |
           $appDir = Split-Path "${{ steps.find_bundle.outputs.bundle_path }}" -Parent
-          $parentDir = Split-Path $appDir -Parent
           Write-Host "App directory: $appDir"
 
           $appxFilename = [System.IO.Path]::GetFileName("${{ steps.find_bundle.outputs.bundle_path }}")
-          $cer  = Get-ChildItem $appDir -Filter "*.cer" | Select-Object -First 1
-          if (-not $cer)  { Write-Error "❌ No certificate (.cer) found"; exit 1 }
+          $cer = Get-ChildItem $appDir -Filter "*.cer" | Select-Object -First 1
+          if (-not $cer) { Write-Error "❌ No certificate (.cer) found"; exit 1 }
           
-          # Extract version from the appx filename
+          # Use the same version from the build step
           $version = ($appxFilename -split "_")[1]
           Write-Host "Detected version: $version"
 
@@ -68,62 +70,30 @@ jobs:
           $appInstallerXml = @"
           <?xml version="1.0" encoding="utf-8"?>
           <AppInstaller Uri="$msixUri" Version="$version" xmlns="http://schemas.microsoft.com/appx/appinstaller/2017/2">
-          <MainPackage Name="PlanCabinet" Publisher="CN=Brian Palmer - TCPW" Version="$version" Uri="$msixUri" />
-          <UpdateSettings>
-          <OnLaunch HoursBetweenUpdateChecks="0" />
-          <AutomaticBackgroundTask />
-          </UpdateSettings>
+            <MainPackage Name="PlanCabinet" Publisher="CN=Brian Palmer - TCPW" Version="$version" Uri="$msixUri" />
+            <UpdateSettings>
+              <OnLaunch HoursBetweenUpdateChecks="0" />
+              <AutomaticBackgroundTask />
+            </UpdateSettings>
+            <Dependencies>
+              <Package Name="Microsoft.WindowsAppRuntime.1.4" Publisher="CN=Microsoft Corporation, O=Microsoft Corporation, L=Redmond, S=Washington, C=US" Version="404.41208.0" />
+            </Dependencies>
           </AppInstaller>
           "@
           Set-Content -Path $appInstallerPath -Value $appInstallerXml -Encoding UTF8
-
-          # Batch installer
-          $batScript = @"
-          @echo off
           
-          :: Check for administrator privileges and re-launch if necessary
-          net session >nul 2>&1
-          if %errorlevel% neq 0 (
-              echo Requesting administrator privileges...
-              powershell -ExecutionPolicy Bypass -Command "Start-Process -FilePath '%~dp0Install-App.bat' -Verb RunAs"
-              exit /b
-          )
+          echo "installer_path=$appInstallerPath" >> $env:GITHUB_OUTPUT
+          echo "cer_path=$($cer.FullName)" >> $env:GITHUB_OUTPUT
+          echo "appx_path=${{ steps.find_bundle.outputs.bundle_path }}" >> $env:GITHUB_OUTPUT
 
-          echo Running with administrator privileges.
-
-          echo Checking for Windows App SDK Runtime...
-          powershell -Command "if (-not (Get-AppxPackage -Name Microsoft.WindowsAppRuntime.1.4)) { Write-Host 'Windows App SDK Runtime not found. Downloading and installing...'; Invoke-WebRequest -Uri 'https://aka.ms/windowsappsdk/1.4/1.4.7/windowsappruntimeinstaller.exe' -OutFile 'windowsappruntimeinstaller.exe'; Start-Process -FilePath 'windowsappruntimeinstaller.exe' -ArgumentList '-quiet' -Wait; Remove-Item 'windowsappruntimeinstaller.exe' }"
-
-          echo Installing certificate...
-          powershell -ExecutionPolicy Bypass -Command "Add-Type -AssemblyName System.Security; `$cert = New-Object System.Security.Cryptography.X509Certificates.X509Certificate2('.\$($cer.Name)'); `$store = New-Object System.Security.Cryptography.X509Certificates.X509Store('TrustedPeople', 'CurrentUser'); `$store.Open('ReadWrite'); `$existing = `$store.Certificates | Where-Object { `$_.Thumbprint -eq `$cert.Thumbprint }; foreach (`$c in `$existing) { `$store.Remove(`$c) }; `$store.Add(`$cert); `$store.Close(); Write-Host 'Certificate installed.'"
-
-          echo Launching app installer...
-          powershell -ExecutionPolicy Bypass -Command "Add-AppxPackage -Path '.\Plan_Cabinet.appinstaller' -ForceUpdateFromAnyVersion"
-
-          echo Installation process launched.
-          pause
-          "@
-          Set-Content -Path "$appDir\Install-App.bat" -Value $batScript -Encoding ASCII
-          
-          # Create self-extracting executable config file
-          $sfxConfig = @"
-          ;!@Install@!UTF-8!
-          RunProgram="Install-App.bat"
-          ;!@Install@!
-          "@
-          Set-Content -Path "$appDir\sfx_config.txt" -Value $sfxConfig -Encoding ASCII
-
-          # Create a self-extracting executable with version in the name
-          $exePath = "$parentDir\Plan_Cabinet_Installer-$version.exe"
-          & "C:\Program Files\7-Zip\7z.exe" a -sfx -y "$exePath" "$appDir\*" -r -spf2 -m0=lzma2
-          
-          echo "bundle_exe=$exePath" >> $env:GITHUB_OUTPUT
-
-      - name: Upload Installer Executable
+      - name: Upload Artifacts to GitHub Pages
         uses: actions/upload-artifact@v4
         with:
-          name: Plan_Cabinet-Installer-Bundle
-          path: ${{ steps.bundle.outputs.bundle_exe }}
+          name: AppInstaller-Files
+          path: |
+            ${{ steps.find_bundle.outputs.bundle_path }}
+            ${{ steps.generate_installer.outputs.installer_path }}
+            ${{ steps.generate_installer.outputs.cer_path }}
           retention-days: 7
 
   deploy-pages:
@@ -135,16 +105,11 @@ jobs:
       id-token: write
 
     steps:
-      - name: Download artifact
+      - name: Download artifacts
         uses: actions/download-artifact@v4
         with:
-          name: Plan_Cabinet-Installer-Bundle
-
-      - name: Create index.html with download link
-        run: |
-          FILE=$(ls *.exe 2>/dev/null | head -n 1)
-          echo "<html><body><h1>Plan_Cabinet Installer</h1><p><a href=\"$FILE\">Download Installer</a></p></body></html>" > index.html
-
+          name: AppInstaller-Files
+      
       - name: Setup Pages
         uses: actions/configure-pages@v5
 
