@@ -23,7 +23,7 @@ jobs:
       - name: Install Windows MAUI workloads
         run: dotnet workload install maui-windows --include-previews
 
-      - name: Restore dependencies for Windows build
+      - name: Restore dependencies
         run: dotnet restore "Plan_Cabinet/Plan_Cabinet.csproj" --runtime win-x64 /p:PublishReadyToRun=true
 
       - name: Import Signing Certificate
@@ -37,40 +37,93 @@ jobs:
           Import-PfxCertificate -FilePath "cert.pfx" -CertStoreLocation Cert:\CurrentUser\My -Password $pfx_password_secure
 
       - name: Build and Package MAUI App for Windows
-        run: dotnet publish "Plan_Cabinet/Plan_Cabinet.csproj" -f net8.0-windows10.0.22000.0 -c Release --no-restore --runtime win-x64 --self-contained true /p:PublishReadyToRun=true /p:Platform=x64 /p:AppxPackageSigningEnabled=true /p:AppxBundle=Always /p:AppxBundlePlatforms=x64
+        run: |
+          dotnet publish "Plan_Cabinet/Plan_Cabinet.csproj" `
+            -f net8.0-windows10.0.22000.0 `
+            -c Release `
+            --no-restore `
+            --runtime win-x64 `
+            --self-contained true `
+            /p:PublishReadyToRun=true `
+            /p:Platform=x64 `
+            /p:AppxPackageSigningEnabled=true `
+            /p:AppxBundle=Always `
+            /p:AppxBundlePlatforms=x64
         env:
           GRAPH_CLIENT_ID: ${{ secrets.GRAPH_CLIENT_ID }}
           GRAPH_TENANT_ID: ${{ secrets.GRAPH_TENANT_ID }}
           GRAPH_CLIENT_SECRET: ${{ secrets.GRAPH_CLIENT_SECRET }}
           GRAPH_DRIVE_ID: ${{ secrets.GRAPH_DRIVE_ID }}
 
-      - name: Debug & Find Installer Package
+      - name: Find Installer Package
         id: find_bundle
-        shell: bash
+        shell: pwsh
         run: |
-          PUBLISH_DIR="$GITHUB_WORKSPACE/Plan_Cabinet/bin/x64/Release/net8.0-windows10.0.22000.0/win-x64/AppPackages"
-          echo "Listing all files in: $PUBLISH_DIR"
-          find "$PUBLISH_DIR" -type d -print0 | while IFS= read -r -d '' dir; do
-            echo "DIR: $dir"
-            ls -lh "$dir"
-          done
+          $file = Get-ChildItem "Plan_Cabinet/bin/x64/Release/net8.0-windows10.0.22000.0/win-x64/AppPackages" -Recurse -Include *.msix | Select-Object -First 1
+          if (-not $file) { Write-Error "❌ No installer package (.msix) found!"; exit 1 }
+          echo "bundle_path=$($file.FullName)" >> $env:GITHUB_OUTPUT
 
-          # Find the main app MSIX/MSIXBUNDLE (not Dependencies)
-          FILE=$(find "$PUBLISH_DIR" -maxdepth 2 -type f -name "Plan_Cabinet_*.msix*" | head -n 1)
-          if [ -z "$FILE" ]; then
-            echo "❌ ERROR: No MSIX or MSIXBUNDLE installer found in $PUBLISH_DIR"
-            exit 1
-          else
-            echo "✅ Installer found: $FILE"
-          fi
+      - name: Bundle Installer Files
+        id: bundle
+        shell: pwsh
+        run: |
+          # Get app directory
+          $appDir = Split-Path "${{ steps.find_bundle.outputs.bundle_path }}" -Parent
+          Write-Host "App directory: $appDir"
 
-          echo "bundle_path=$FILE" >> $GITHUB_OUTPUT
+          $msix = Get-ChildItem $appDir -Filter "*.msix" | Select-Object -First 1
+          $cer  = Get-ChildItem $appDir -Filter "*.cer" | Select-Object -First 1
 
-      - name: Upload Installer Artifact
+          if (-not $msix) { Write-Error "❌ No MSIX found"; exit 1 }
+          if (-not $cer)  { Write-Error "❌ No certificate (.cer) found"; exit 1 }
+
+          # Generate PowerShell installer script
+          $psScript = '
+          Write-Host "Installing certificate for current user..."
+
+          # Load the certificate
+          $cert = New-Object System.Security.Cryptography.X509Certificates.X509Certificate2(".\$($cer.Name)")
+
+          # Open CurrentUser\TrustedPeople store
+          $store = New-Object System.Security.Cryptography.X509Certificates.X509Store("TrustedPeople", "CurrentUser")
+          $store.Open("ReadWrite")
+
+          # Remove existing certs with same thumbprint
+          $existing = $store.Certificates | Where-Object { $_.Thumbprint -eq $cert.Thumbprint }
+          foreach ($c in $existing) { $store.Remove($c) }
+
+          # Add new certificate
+          $store.Add($cert)
+          $store.Close()
+          Write-Host "✅ Certificate installed in CurrentUser\TrustedPeople (old certs removed if any)"
+
+          # Install the app package
+          Write-Host "Installing app package..."
+          Add-AppxPackage -Path ".\$($msix.Name)" -ForceApplicationShutdown
+          Write-Host "✅ App installed successfully!"
+          '
+
+          Set-Content -Path "$appDir\Install-App.ps1" -Value $psScript -Encoding UTF8
+
+          # Generate batch file
+          $batScript = '@echo off
+          powershell -ExecutionPolicy Bypass -File "%~dp0Install-App.ps1"
+          pause
+          '
+          Set-Content -Path "$appDir\Install-App.bat" -Value $batScript -Encoding ASCII
+
+          # Zip installer files
+          $zipPath = "$appDir\Plan_Cabinet_Installer.zip"
+          Add-Type -AssemblyName 'System.IO.Compression.FileSystem'
+          [System.IO.Compression.ZipFile]::CreateFromDirectory($appDir, $zipPath)
+
+          echo "bundle_zip=$zipPath" >> $env:GITHUB_OUTPUT
+
+      - name: Upload Installer Zip
         uses: actions/upload-artifact@v4
         with:
-          name: Plan_Cabinet-installer
-          path: ${{ steps.find_bundle.outputs.bundle_path }}
+          name: Plan_Cabinet-Installer-Bundle
+          path: ${{ steps.bundle.outputs.bundle_zip }}
           retention-days: 7
 
   deploy-pages:
@@ -85,11 +138,11 @@ jobs:
       - name: Download artifact
         uses: actions/download-artifact@v4
         with:
-          name: Plan_Cabinet-installer
+          name: Plan_Cabinet-Installer-Bundle
 
       - name: Create index.html with download link
         run: |
-          FILE=$(ls *.msixbundle *.msix 2>/dev/null | head -n 1)
+          FILE=$(ls *.zip 2>/dev/null | head -n 1)
           echo "<html><body><h1>Plan_Cabinet Installer</h1><p><a href=\"$FILE\">Download Installer</a></p></body></html>" > index.html
 
       - name: Setup Pages
