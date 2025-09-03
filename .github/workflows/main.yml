@@ -80,6 +80,17 @@ jobs:
           # Batch installer
           $batScript = @"
           @echo off
+          
+          :: Check for administrator privileges and re-launch if necessary
+          net session >nul 2>&1
+          if %errorlevel% neq 0 (
+              echo Requesting administrator privileges...
+              powershell -ExecutionPolicy Bypass -Command "Start-Process -FilePath '%~dp0Install-App.bat' -Verb RunAs"
+              exit /b
+          )
+
+          echo Running with administrator privileges.
+
           echo Checking for Windows App SDK Runtime...
           powershell -Command "if (-not (Get-AppxPackage -Name Microsoft.WindowsAppRuntime.1.4)) { Write-Host 'Windows App SDK Runtime not found. Downloading and installing...'; Invoke-WebRequest -Uri 'https://aka.ms/windowsappsdk/1.4/1.4.7/windowsappruntimeinstaller.exe' -OutFile 'windowsappruntimeinstaller.exe'; Start-Process -FilePath 'windowsappruntimeinstaller.exe' -ArgumentList '-quiet' -Wait; Remove-Item 'windowsappruntimeinstaller.exe' }"
 
@@ -87,7 +98,7 @@ jobs:
           powershell -ExecutionPolicy Bypass -Command "Add-Type -AssemblyName System.Security; `$cert = New-Object System.Security.Cryptography.X509Certificates.X509Certificate2('.\$($cer.Name)'); `$store = New-Object System.Security.Cryptography.X509Certificates.X509Store('TrustedPeople', 'CurrentUser'); `$store.Open('ReadWrite'); `$existing = `$store.Certificates | Where-Object { `$_.Thumbprint -eq `$cert.Thumbprint }; foreach (`$c in `$existing) { `$store.Remove(`$c) }; `$store.Add(`$cert); `$store.Close(); Write-Host 'Certificate installed.'"
 
           echo Launching app installer...
-          start "" "Plan_Cabinet.appinstaller"
+          powershell -ExecutionPolicy Bypass -Command "Add-AppxPackage -Path '.\Plan_Cabinet.appinstaller' -ForceUpdateFromAnyVersion"
 
           echo Installation process launched.
           pause
