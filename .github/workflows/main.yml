@@ -36,7 +36,7 @@ jobs:
       - name: Build and Package MAUI App for Windows
         shell: pwsh
         run: |
-          dotnet publish -f net8.0-windows10.0.22000.0 -c Release -p:WindowsPackageType=MSIX -p:RuntimeIdentifier=win-x64 -p:Platform=x64 -p:PublishReadyToRun=true --self-contained true
+          dotnet publish -f net8.0-windows10.0.22000.0 -c Release -p:WindowsPackageType=MSIX -p:RuntimeIdentifier=win-x64 -p:Platform=x64 -p:PublishReadyToRun=false --self-contained true
 
       - name: Find Installer Package
         id: find_bundle
