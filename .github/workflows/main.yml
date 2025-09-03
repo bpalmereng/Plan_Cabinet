@@ -46,7 +46,7 @@ jobs:
           if (-not $file) { Write-Error "❌ No installer package found!"; exit 1 }
           echo "bundle_path=$($file.FullName)" >> $env:GITHUB_OUTPUT
 
-      - name: Bundle Installer Files and Generate .appinstaller
+      - name: Bundle Installer Files and Create Executable
         id: bundle
         shell: pwsh
         run: |
@@ -93,19 +93,26 @@ jobs:
           pause
           "@
           Set-Content -Path "$appDir\Install-App.bat" -Value $batScript -Encoding ASCII
+          
+          # Create self-extracting executable config file
+          $sfxConfig = @"
+          ;!@Install@!UTF-8!
+          RunProgram="Install-App.bat"
+          ;!@Install@!
+          "@
+          Set-Content -Path "$appDir\sfx_config.txt" -Value $sfxConfig -Encoding ASCII
 
-          # Zip all installer files with version in the name
-          $zipPath = "$parentDir\Plan_Cabinet_Installer-$version.zip"
-          Add-Type -AssemblyName 'System.IO.Compression.FileSystem'
-          [System.IO.Compression.ZipFile]::CreateFromDirectory($appDir, $zipPath)
+          # Create a self-extracting executable with version in the name
+          $exePath = "$parentDir\Plan_Cabinet_Installer-$version.exe"
+          & "C:\Program Files\7-Zip\7z.exe" a -sfx -y "$exePath" "$appDir\*" -r -spf2 -m0=lzma2
+          
+          echo "bundle_exe=$exePath" >> $env:GITHUB_OUTPUT
 
-          echo "bundle_zip=$zipPath" >> $env:GITHUB_OUTPUT
-      
-      - name: Upload Installer Zip
+      - name: Upload Installer Executable
         uses: actions/upload-artifact@v4
         with:
           name: Plan_Cabinet-Installer-Bundle
-          path: ${{ steps.bundle.outputs.bundle_zip }}
+          path: ${{ steps.bundle.outputs.bundle_exe }}
           retention-days: 7
 
   deploy-pages:
@@ -124,7 +131,7 @@ jobs:
 
       - name: Create index.html with download link
         run: |
-          FILE=$(ls *.zip 2>/dev/null | head -n 1)
+          FILE=$(ls *.exe 2>/dev/null | head -n 1)
           echo "<html><body><h1>Plan_Cabinet Installer</h1><p><a href=\"$FILE\">Download Installer</a></p></body></html>" > index.html
 
       - name: Setup Pages
