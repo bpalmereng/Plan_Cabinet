@@ -114,6 +114,7 @@
     <ApplicationId>com.companyname.plancabinet</ApplicationId>
     <ApplicationTitle>Plan Cabinet</ApplicationTitle>
     <IsPublishable>True</IsPublishable>
+    <PlatformTarget>x64</PlatformTarget>
   </PropertyGroup>
 
   <PropertyGroup>
