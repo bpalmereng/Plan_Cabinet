@@ -70,7 +70,7 @@ jobs:
           $appInstallerXml = @"
           <?xml version="1.0" encoding="utf-8"?>
           <AppInstaller Uri="$msixUri" Version="$version" xmlns="http://schemas.microsoft.com/appx/appinstaller/2017/2">
-            <MainPackage Name="PlanCabinet" Publisher="CN=Brian Palmer - TCPW" Version="$version" Uri="$msixUri" />
+            <MainPackage Name="com.companyname.plan_cabinet" Publisher="CN=Brian Palmer - TCPW" Version="$version" Uri="$msixUri" />
             <UpdateSettings>
               <OnLaunch HoursBetweenUpdateChecks="0" />
               <AutomaticBackgroundTask />
