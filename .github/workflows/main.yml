@@ -36,7 +36,7 @@ jobs:
       - name: Update AppxManifest Version
         shell: pwsh
         run: |
-          $appxManifestPath = "$($env:GITHUB_WORKSPACE)\Platforms\Windows\Package.appxmanifest"
+          $appxManifestPath = "$($env:GITHUB_WORKSPACE)\Plan_Cabinet\Platforms\Windows\Package.appxmanifest"
           $xml = [xml](Get-Content $appxManifestPath)
           $version = "1.0.$($env:GITHUB_RUN_NUMBER).0"
           $xml.Package.Identity.Version = $version
