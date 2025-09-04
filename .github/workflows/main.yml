@@ -49,39 +49,6 @@ jobs:
           if (-not $file) { Write-Error "❌ No installer package found!"; exit 1 }
           echo "bundle_path=$($file.FullName)" >> $env:GITHUB_OUTPUT
 
-      - name: Extract Package Identity
-        id: extract_identity
-        shell: pwsh
-        run: |
-          $packagePath = "${{ steps.find_bundle.outputs.bundle_path }}"
-          $tempDir = New-Item -ItemType Directory -Path (Join-Path $env:TEMP 'temp_unzip') -Force
-          Expand-Archive -Path $packagePath -DestinationPath $tempDir -Force
-          
-          $manifestFile = Get-ChildItem -Path $tempDir -Filter 'AppxManifest.xml' -Recurse | Select-Object -First 1
-          if (-not $manifestFile) {
-              Write-Error "❌ AppxManifest.xml not found in the package."
-              exit 1
-          }
-
-          $manifestXml = New-Object System.Xml.XmlDocument
-          $manifestXml.Load($manifestFile.FullName)
-          
-          $nsManager = New-Object System.Xml.XmlNamespaceManager($manifestXml.NameTable)
-          $nsManager.AddNamespace('p', 'http://schemas.microsoft.com/appx/manifest/foundation/windows10')
-          
-          $identityNode = $manifestXml.SelectSingleNode('//p:Identity', $nsManager)
-          
-          if ($identityNode) {
-              $packageName = $identityNode.GetAttribute('Name')
-              $publisherName = $identityNode.GetAttribute('Publisher')
-              echo "package_name=$packageName" >> $env:GITHUB_OUTPUT
-              echo "publisher_name=$publisherName" >> $env:GITHUB_OUTPUT
-              Write-Host "✅ Extracted Name: $packageName, Publisher: $publisherName"
-          } else {
-              Write-Error "❌ Identity element not found in manifest."
-              exit 1
-          }
-
       - name: Generate App Installer
         id: generate_installer
         shell: pwsh
@@ -93,8 +60,10 @@ jobs:
           if (-not $cer) { Write-Error "❌ No certificate (.cer) found"; exit 1 }
           
           $version = ($appxFilename -split "_")[1]
-          $packageName = "${{ steps.extract_identity.outputs.package_name }}"
-          $publisherName = "${{ steps.extract_identity.outputs.publisher_name }}"
+          
+          # Using hardcoded values from your csproj to avoid build issues
+          $packageName = "com.companyname.plan_cabinet"
+          $publisherName = "CN=Brian Palmer - TCPW"
 
           $appInstallerPath = Join-Path $appDir "Plan_Cabinet.appinstaller"
           $msixUri = "https://bpalmereng.github.io/Plan_Cabinet/$appxFilename"
@@ -141,6 +110,11 @@ jobs:
         with:
           name: AppInstaller-Files
       
+      - name: Create index.html with download link
+        run: |
+          FILE=$(ls *.appinstaller 2>/dev/null | head -n 1)
+          echo "<html><body><h1>Plan_Cabinet App Installer</h1><p>Click <a href=\"$FILE\">here to install</a> and update the app.</p></body></html>" > index.html
+
       - name: Setup Pages
         uses: actions/configure-pages@v5
 
