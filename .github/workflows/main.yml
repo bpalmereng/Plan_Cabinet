@@ -83,17 +83,17 @@ jobs:
           
           if ($null -eq $appxBundleFile) { Write-Error "No .msixbundle/.msix file found."; exit 1 }
           if ($null -eq $certFile) { Write-Error "No .cer file found."; exit 1 }
-
+          
           $appxFilename = $appxBundleFile.Name
           $cerFilename = $certFile.Name
           $appInstallerFilename = "Plan_Cabinet.appinstaller"
-
+          
           $version = ($appxFilename -split "_")[1]
-          $msixUri = "https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/$appxFilename"
-
+          $msixUri = "https://bpalmereng.github.io/Plan_Cabinet/$appxFilename"
+          
           $packageName = "com.companyname.plan_cabinet"
           $publisherName = "CN=Brian Palmer - TCPW"
-
+          
           $appInstallerXml = @"
           <?xml version="1.0" encoding="utf-8"?>
           <AppInstaller Uri="$msixUri" Version="$version" xmlns="http://schemas.microsoft.com/appx/appinstaller/2017/2">
@@ -111,8 +111,8 @@ jobs:
           
           echo "appinstaller_name=$appInstallerFilename" >> $env:GITHUB_OUTPUT
           echo "cer_name=$cerFilename" >> $env:GITHUB_OUTPUT
-
-          cat <<EOF > index.html
+          
+          $htmlContent = @"
           <!DOCTYPE html>
           <html lang="en">
           <head>
@@ -148,7 +148,7 @@ jobs:
                 <li>
                     <strong>Step 2: Install the Application</strong>
                     <p>Once the certificate is successfully installed, click the link below to install the application. This will launch the Microsoft App Installer to guide you through the process.</p>
-                    <a href="ms-appinstaller:?source=https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/$appInstallerFilename" class="step-link">Install App</a>
+                    <a href="ms-appinstaller:?source=https://bpalmereng.github.io/Plan_Cabinet/$appInstallerFilename" class="step-link">Install App</a>
                 </li>
             </ol>
           </div>
@@ -158,7 +158,8 @@ jobs:
           </div>
           </body>
           </html>
-          EOF
+          "@
+          Set-Content -Path "index.html" -Value $htmlContent -Encoding UTF8
 
       - name: Setup Pages
         uses: actions/configure-pages@v5
