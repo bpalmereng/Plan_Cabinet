@@ -58,7 +58,10 @@ jobs:
         shell: pwsh
         run: |
           $publishPath = "Plan_Cabinet/Publish"
-          $file = Get-ChildItem $publishPath -Recurse -Include *.msixbundle,*.msix | Where-Object { $_.DirectoryName -notlike "*Dependencies*" } | Select-Object -First 1
+          $publishPath = Get-ChildItem -Path "Plan_Cabinet" -Recurse -Directory -Include "Publish" | Where-Object { $_.FullName -like "*\Publish" } | Select-Object -First 1
+          if (-not $publishPath) { Write-Error "❌ No 'Publish' directory found!"; exit 1 }
+          
+          $file = Get-ChildItem $publishPath.FullName -Recurse -Include *.msixbundle,*.msix | Where-Object { $_.DirectoryName -notlike "*Dependencies*" } | Select-Object -First 1
           if (-not $file) { Write-Error "❌ No installer package found!"; exit 1 }
           echo "bundle_path=$($file.FullName)" >> $env:GITHUB_OUTPUT
           $cer = Get-ChildItem (Split-Path $file.FullName -Parent) -Filter "*.cer" | Select-Object -First 1
