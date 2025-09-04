@@ -21,25 +21,7 @@ jobs:
           dotnet-version: '8.0.x'
 
       - name: Install Windows MAUI workloads
-        run: dotnet workload install maui-windows --include-previews
-
-      - name: Install Missing Certificates
-        shell: pwsh
-        run: |
-          # This step addresses the "certificate chain not trusted" error by importing a known Microsoft root certificate.
-          # First, download the certificate to a temporary file, as the .NET constructor does not support URLs.
-          # Using a more stable Microsoft permanent link (fwlink) to prevent "BlobNotFound" errors.
-          Invoke-WebRequest -Uri "https://go.microsoft.com/fwlink/?linkid=199920" -OutFile "MicrosoftCodeSigningPCA2011.cer"
-          
-          # Now, load the certificate from the downloaded file and add it to the trusted store.
-          $cert = [System.Security.Cryptography.X509Certificates.X509Certificate2]::new("MicrosoftCodeSigningPCA2011.cer")
-          $store = [System.Security.Cryptography.X509Certificates.X509Store]::new([System.Security.Cryptography.X509Certificates.StoreName]::Root, [System.Security.Cryptography.X509Certificates.StoreLocation]::LocalMachine)
-          $store.Open([System.Security.Cryptography.X509Certificates.OpenFlags]::ReadWrite)
-          $store.Add($cert)
-          $store.Close()
-          
-          # Clean up the temporary file.
-          Remove-Item -Path "MicrosoftCodeSigningPCA2011.cer"
+        run: dotnet workload install maui-windows --include-previews     
 
       - name: Import Signing Certificate
         shell: pwsh
@@ -52,40 +34,30 @@ jobs:
           Import-PfxCertificate -FilePath "cert.pfx" -CertStoreLocation Cert:\CurrentUser\My -Password $pfx_password_secure
 
       - name: Build and Package MAUI App for Windows
-        shell: pwsh
         run: |
-          $versionNumber = (Get-Content "Plan_Cabinet.csproj" -Raw | Select-String -Pattern "<ApplicationVersion>(\d+)</ApplicationVersion>").Matches.Groups[1].Value
           dotnet publish -f net8.0-windows10.0.22000.0 -c Release `
-            -p:RuntimeIdentifier=win10-x64 `
-            -p:AppxPackageSigningEnabled=true `
-            -p:PackageCertificateThumbprint="$(Get-PfxCertificate -FilePath "cert.pfx" | Select-Object -ExpandProperty Thumbprint)" `
-            -p:GenerateAppxPackageOnBuild=true `
-            -p:EnableCompression=true `
-            -p:AppxAutoIncrementPackageRevision=True `
-            -p:AppxPublishInstaller=true `
-            -p:AppxInstallerUri="https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/" `
-            -p:AppxInstallerUpdateUri="https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/" `
-            -p:AppxPackageDir="AppPackages\"
+          -p:RuntimeIdentifier=win10-x64 `
+          -p:GenerateAppxPackageOnBuild=true `
+          -p:GenerateAppInstallerFile=true `
+          -p:EnableCompression=true `
+          -p:AppxAutoIncrementPackageRevision=true `
+          -p:AppxInstallerUri="https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/" `
+          -p:AppxInstallerUpdateUri="https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/" `
+          -p:AppxPackageDir="AppPackages\"
 
       - name: Find and set output variables for generated files
         id: find_bundle
         shell: pwsh
         run: |
           $appInstallerFile = Get-ChildItem -Path "AppPackages" -Recurse -Filter "*.appinstaller" | Select-Object -First 1
-          if ($null -eq $appInstallerFile) {
-            Write-Error "No .appinstaller file found."
-            exit 1
-          }
+          if ($null -eq $appInstallerFile) { Write-Error "No .appinstaller file found."; exit 1 }
+          
           $appxBundleFile = Get-ChildItem -Path "AppPackages" -Recurse -Filter "*.msix" | Select-Object -First 1
-          if ($null -eq $appxBundleFile) {
-            Write-Error "No .msix file found."
-            exit 1
-          }
+          if ($null -eq $appxBundleFile) { Write-Error "No .msix file found."; exit 1 }
+
           $certFile = Get-ChildItem -Path "AppPackages" -Recurse -Filter "*.cer" | Select-Object -First 1
-          if ($null -eq $certFile) {
-            Write-Error "No .cer file found."
-            exit 1
-          }
+          if ($null -eq $certFile) { Write-Error "No .cer file found."; exit 1 }
+
           echo "appinstaller_path=$($appInstallerFile.FullName)" >> $env:GITHUB_OUTPUT
           echo "bundle_path=$($appxBundleFile.FullName)" >> $env:GITHUB_OUTPUT
           echo "cer_path=$($certFile.FullName)" >> $env:GITHUB_OUTPUT
