@@ -82,11 +82,10 @@ jobs:
         with:
           name: AppInstaller-Files
       
-      - name: Generate App Installer and index.html
+      - name: Generate index.html with download links
         id: generate_and_find
         shell: pwsh
         run: |
-          # 💡 FIX: Corrected the Get-ChildItem command to use a Where-Object filter instead of an array.
           $appxBundleFile = Get-ChildItem -Path "." -Recurse | Where-Object { $_.Name -like "*.msixbundle" -or $_.Name -like "*.msix" } | Select-Object -First 1
           $certFile = Get-ChildItem -Path "." -Recurse -Filter "*.cer" | Select-Object -First 1
           
@@ -95,31 +94,6 @@ jobs:
           
           $appxFilename = $appxBundleFile.Name
           $cerFilename = $certFile.Name
-          $appInstallerFilename = "Plan_Cabinet.appinstaller"
-          
-          $version = ($appxFilename -split "_")[1]
-          $msixUri = "https://bpalmereng.github.io/Plan_Cabinet/$appxFilename"
-          
-          $packageName = "com.companyname.plan_cabinet"
-          $publisherName = "CN=Brian Palmer - TCPW"
-          
-          $appInstallerXml = @"
-          <?xml version="1.0" encoding="utf-8"?>
-          <AppInstaller Uri="$msixUri" Version="$version" xmlns="http://schemas.microsoft.com/appx/appinstaller/2017/2">
-            <MainPackage Name="$packageName" Publisher="$publisherName" Version="$version" Uri="$msixUri" />
-            <UpdateSettings>
-              <OnLaunch HoursBetweenUpdateChecks="0" />
-              <AutomaticBackgroundTask />
-            </UpdateSettings>
-            <Dependencies>
-              <Package Name="Microsoft.WindowsAppRuntime.1.4" Publisher="CN=Microsoft Corporation, O=Microsoft Corporation, L=Redmond, S=Washington, C=US" Version="404.41208.0" />
-            </Dependencies>
-          </AppInstaller>
-          "@
-          Set-Content -Path $appInstallerFilename -Value $appInstallerXml -Encoding UTF8
-          
-          echo "appinstaller_name=$appInstallerFilename" >> $env:GITHUB_OUTPUT
-          echo "cer_name=$cerFilename" >> $env:GITHUB_OUTPUT
           
           $htmlContent = @"
           <!DOCTYPE html>
@@ -156,8 +130,8 @@ jobs:
                 </li>
                 <li>
                     <strong>Step 2: Install the Application</strong>
-                    <p>Once the certificate is successfully installed, click the link below to install the application. This will launch the Microsoft App Installer to guide you through the process.</p>
-                    <a href="ms-appinstaller:?source=https://bpalmereng.github.io/Plan_Cabinet/$appInstallerFilename" class="step-link">Install App</a>
+                    <p>Once the certificate is successfully installed, click the link below to download the application package (`.msixbundle`). You can then double-click the downloaded file to install it.</p>
+                    <a href="$appxFilename" class="step-link">Download App</a>
                 </li>
             </ol>
           </div>
