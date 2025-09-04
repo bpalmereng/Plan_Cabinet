@@ -1,4 +1,4 @@
-﻿name: Publish Win-x64 with App Installer
+﻿name: Publish Win-x64 with App Embed
 
 on:
   push:
@@ -33,17 +33,28 @@ jobs:
           $pfx_password_secure = ConvertTo-SecureString -String $pfx_password -AsPlainText -Force
           Import-PfxCertificate -FilePath "cert.pfx" -CertStoreLocation Cert:\CurrentUser\My -Password $pfx_password_secure
 
-      - name: Build and Package MAUI App for Windows
+      - name: Build and Package MAUI App for Windows with embedded AppInstaller
         shell: pwsh
         run: |
           $appVersion = "1.0.$($env:GITHUB_RUN_NUMBER).0"
-          dotnet publish -f net8.0-windows10.0.22000.0 -c Release -p:WindowsPackageType=MSIX -p:RuntimeIdentifier=win-x64 -p:Platform=x64 -p:PublishReadyToRun=false -p:ApplicationVersion=$appVersion --self-contained true
+          
+          dotnet publish -f net8.0-windows10.0.22000.0 -c Release `
+          -p:WindowsPackageType=MSIX `
+          -p:RuntimeIdentifier=win-x64 `
+          -p:Platform=x64 `
+          -p:PublishReadyToRun=false `
+          -p:ApplicationVersion=$appVersion `
+          -p:AppxAutoIncrementPackageRevision=true `
+          -p:AppxInstallerUri="https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/" `
+          -p:AppxInstallerCheckForUpdatesFrequency=OnStart `
+          --self-contained true
 
       - name: Find Installer Package
         id: find_bundle
         shell: pwsh
         run: |
-          $file = Get-ChildItem "Plan_Cabinet/bin/x64/Release/net8.0-windows10.0.22000.0/win-x64/AppPackages" -Recurse -Include *.msixbundle,*.msix | Where-Object { $_.DirectoryName -notlike "*Dependencies*" } | Select-Object -First 1
+          $file = Get-ChildItem "Plan_Cabinet/bin/x64/Release/net8.0-windows10.0.22000.0/win-x64/AppPackages" -Recurse -Include *.msixbundle,*.msix `
+          | Where-Object { $_.DirectoryName -notlike "*Dependencies*" } | Select-Object -First 1
           if (-not $file) { Write-Error "❌ No installer package found!"; exit 1 }
           echo "bundle_path=$($file.FullName)" >> $env:GITHUB_OUTPUT
           $cer = Get-ChildItem (Split-Path $file.FullName -Parent) -Filter "*.cer" | Select-Object -First 1
