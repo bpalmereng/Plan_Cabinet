@@ -28,7 +28,8 @@ jobs:
         run: |
           # This step addresses the "certificate chain not trusted" error by importing a known Microsoft root certificate.
           # First, download the certificate to a temporary file, as the .NET constructor does not support URLs.
-          Invoke-WebRequest -Uri "https://www.microsoft.com/pkiops/certs/Microsoft%20Code%20Signing%20PCA%202011.cer" -OutFile "MicrosoftCodeSigningPCA2011.cer"
+          # Using a more stable Microsoft permanent link (fwlink) to prevent "BlobNotFound" errors.
+          Invoke-WebRequest -Uri "https://go.microsoft.com/fwlink/?linkid=199920" -OutFile "MicrosoftCodeSigningPCA2011.cer"
           
           # Now, load the certificate from the downloaded file and add it to the trusted store.
           $cert = [System.Security.Cryptography.X509Certificates.X509Certificate2]::new("MicrosoftCodeSigningPCA2011.cer")
