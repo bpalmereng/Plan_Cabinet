@@ -36,7 +36,7 @@ jobs:
            # ➡️ SOLUTION: Add this new step to install the C++ tools
       - name: Install Visual Studio C++ build tools
         run: |
-          "C:\Program Files (x86)\Microsoft Visual Studio\Installer\vs_installer.exe" modify --installPath "C:\Program Files\Microsoft Visual Studio\2022\Enterprise" --add Microsoft.VisualStudio.Component.VC.Tools.x86.x64 --quiet --wait --norestart --force
+          "C:\\Program Files (x86)\\Microsoft Visual Studio\\Installer\\vs_installer.exe" modify --installPath "C:\\Program Files\\Microsoft Visual Studio\\2022\\Community" --add Microsoft.VisualStudio.Component.VC.Tools.x86.x64 --quiet --wait --norestart --force
 
       - name: Build and Package MAUI App for Windows
         run: |
