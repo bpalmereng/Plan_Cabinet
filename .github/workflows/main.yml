@@ -27,11 +27,18 @@ jobs:
         shell: pwsh
         run: |
           # This step addresses the "certificate chain not trusted" error by importing a known Microsoft root certificate.
-          $cert = [System.Security.Cryptography.X509Certificates.X509Certificate2]::new("https://www.microsoft.com/pkiops/certs/Microsoft%20Code%20Signing%20PCA%202011.cer")
+          # First, download the certificate to a temporary file, as the .NET constructor does not support URLs.
+          Invoke-WebRequest -Uri "https://www.microsoft.com/pkiops/certs/Microsoft%20Code%20Signing%20PCA%202011.cer" -OutFile "MicrosoftCodeSigningPCA2011.cer"
+          
+          # Now, load the certificate from the downloaded file and add it to the trusted store.
+          $cert = [System.Security.Cryptography.X509Certificates.X509Certificate2]::new("MicrosoftCodeSigningPCA2011.cer")
           $store = [System.Security.Cryptography.X509Certificates.X509Store]::new([System.Security.Cryptography.X509Certificates.StoreName]::Root, [System.Security.Cryptography.X509Certificates.StoreLocation]::LocalMachine)
           $store.Open([System.Security.Cryptography.X509Certificates.OpenFlags]::ReadWrite)
           $store.Add($cert)
           $store.Close()
+          
+          # Clean up the temporary file.
+          Remove-Item -Path "MicrosoftCodeSigningPCA2011.cer"
 
       - name: Import Signing Certificate
         shell: pwsh
