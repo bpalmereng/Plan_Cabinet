@@ -57,7 +57,8 @@ jobs:
         id: find_bundle
         shell: pwsh
         run: |
-          $file = Get-ChildItem "Plan_Cabinet/bin/x64/Release/net8.0-windows10.0.22000.0/win-x64/AppPackages" -Recurse -Include *.msixbundle,*.msix | Where-Object { $_.DirectoryName -notlike "*Dependencies*" } | Select-Object -First 1
+          $publishPath = "Plan_Cabinet/Publish"
+          $file = Get-ChildItem $publishPath -Recurse -Include *.msixbundle,*.msix | Where-Object { $_.DirectoryName -notlike "*Dependencies*" } | Select-Object -First 1
           if (-not $file) { Write-Error "❌ No installer package found!"; exit 1 }
           echo "bundle_path=$($file.FullName)" >> $env:GITHUB_OUTPUT
           $cer = Get-ChildItem (Split-Path $file.FullName -Parent) -Filter "*.cer" | Select-Object -First 1
