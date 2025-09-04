@@ -46,7 +46,7 @@ jobs:
       - name: Build and Package MAUI App for Windows
         shell: pwsh
         run: |
-            dotnet publish -f net8.0-windows10.0.19041.0 -c Release -p:RuntimeIdentifier=win10-x64 -p:AppxPackageDir='.\Publish' -p:AppxBundle=True -p:PublishReadyToRun=True -p:PublishSingleFile=True -p:GenerateAppInstallerFile=True -p:AppInstallerUri='https://<your-username>.github.io/<your-repository>/' -p:AppxPackageSigningEnabled=true -p:PackageCertificateThumbprint=$thumbprint -p:AppxPackageUpdateUri='https://<your-username>.github.io/<your-repository>/' -p:AppInstallerUpdateFrequency=1 -p:AppInstallerCheckForUpdateFrequency=OnLaunch -p:Version=$appxVersion -p:EnableCompression=True
+            dotnet publish -f net8.0-windows10.0.22000.0 -c Release -p:RuntimeIdentifier=win10-x64 -p:AppxPackageDir='.\Publish' -p:AppxBundle=True -p:PublishReadyToRun=True -p:PublishSingleFile=True -p:GenerateAppInstallerFile=True -p:AppInstallerUri='https://<your-username>.github.io/<your-repository>/' -p:AppxPackageSigningEnabled=true -p:PackageCertificateThumbprint=$thumbprint -p:AppxPackageUpdateUri='https://<your-username>.github.io/<your-repository>/' -p:AppInstallerUpdateFrequency=1 -p:AppInstallerCheckForUpdateFrequency=OnLaunch -p:Version=$appxVersion -p:EnableCompression=True
 
       - name: Find Installer Package
         id: find_bundle
