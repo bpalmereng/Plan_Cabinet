@@ -33,21 +33,20 @@ jobs:
           $pfx_password_secure = ConvertTo-SecureString -String $pfx_password -AsPlainText -Force
           Import-PfxCertificate -FilePath "cert.pfx" -CertStoreLocation Cert:\CurrentUser\My -Password $pfx_password_secure
 
-          - name: Update AppxManifest Version
-            shell: pwsh
-            run: |
-              $appxManifestPath = "$($env:GITHUB_WORKSPACE)\Platforms\Windows\Package.appxmanifest"
-              $xml = [xml](Get-Content $appxManifestPath)
-              $version = "1.0.$($env:GITHUB_RUN_NUMBER).0"
-              $xml.Package.Identity.Version = $version
-              $xml.Save($appxManifestPath)
-              Write-Host "Updated AppxManifest version to: $version"
+      - name: Update AppxManifest Version
+        shell: pwsh
+        run: |
+          $appxManifestPath = "$($env:GITHUB_WORKSPACE)\Platforms\Windows\Package.appxmanifest"
+          $xml = [xml](Get-Content $appxManifestPath)
+          $version = "1.0.$($env:GITHUB_RUN_NUMBER).0"
+          $xml.Package.Identity.Version = $version
+          $xml.Save($appxManifestPath)
+          Write-Host "Updated AppxManifest version to: $version"
 
       - name: Build and Package MAUI App for Windows
         shell: pwsh
-        run: |
-          # $appVersion = "1.0.$($env:GITHUB_RUN_NUMBER).0"
-          dotnet publish -f net8.0-windows10.0.22000.0 -c Release -p:WindowsPackageType=MSIX -p:RuntimeIdentifier=win-x64 -p:Platform=x64  -p:AppxPackageDir="AppPackages\" -p:PublishReadyToRun=false -p:ApplicationVersion=$appVersion --self-contained true
+        run: |                    
+          dotnet publish -f net8.0-windows10.0.22000.0 -c Release -p:WindowsPackageType=MSIX -p:RuntimeIdentifier=win-x64 -p:Platform=x64 -p:PublishReadyToRun=false -p:ApplicationVersion=$appVersion --self-contained true
 
       - name: Find Installer Package
         id: find_bundle
@@ -83,10 +82,11 @@ jobs:
         with:
           name: AppInstaller-Files
       
-      - name: Generate index.html with download links
+      - name: Generate App Installer and index.html
         id: generate_and_find
         shell: pwsh
         run: |
+          # 💡 FIX: Corrected the Get-ChildItem command to use a Where-Object filter instead of an array.
           $appxBundleFile = Get-ChildItem -Path "." -Recurse | Where-Object { $_.Name -like "*.msixbundle" -or $_.Name -like "*.msix" } | Select-Object -First 1
           $certFile = Get-ChildItem -Path "." -Recurse -Filter "*.cer" | Select-Object -First 1
           
@@ -95,6 +95,31 @@ jobs:
           
           $appxFilename = $appxBundleFile.Name
           $cerFilename = $certFile.Name
+          $appInstallerFilename = "Plan_Cabinet.appinstaller"
+          
+          $version = ($appxFilename -split "_")[1]
+          $msixUri = "https://bpalmereng.github.io/Plan_Cabinet/$appxFilename"
+          
+          $packageName = "com.companyname.plan_cabinet"
+          $publisherName = "CN=Brian Palmer - TCPW"
+          
+          $appInstallerXml = @"
+          <?xml version="1.0" encoding="utf-8"?>
+          <AppInstaller Uri="$msixUri" Version="$version" xmlns="http://schemas.microsoft.com/appx/appinstaller/2017/2">
+            <MainPackage Name="$packageName" Publisher="$publisherName" Version="$version" Uri="$msixUri" />
+            <UpdateSettings>
+              <OnLaunch HoursBetweenUpdateChecks="0" />
+              <AutomaticBackgroundTask />
+            </UpdateSettings>
+            <Dependencies>
+              <Package Name="Microsoft.WindowsAppRuntime.1.4" Publisher="CN=Microsoft Corporation, O=Microsoft Corporation, L=Redmond, S=Washington, C=US" Version="404.41208.0" />
+            </Dependencies>
+          </AppInstaller>
+          "@
+          Set-Content -Path $appInstallerFilename -Value $appInstallerXml -Encoding UTF8
+          
+          echo "appinstaller_name=$appInstallerFilename" >> $env:GITHUB_OUTPUT
+          echo "cer_name=$cerFilename" >> $env:GITHUB_OUTPUT
           
           $htmlContent = @"
           <!DOCTYPE html>
@@ -131,8 +156,8 @@ jobs:
                 </li>
                 <li>
                     <strong>Step 2: Install the Application</strong>
-                    <p>Once the certificate is successfully installed, click the link below to download the application package (`.msixbundle`). You can then double-click the downloaded file to install it.</p>
-                    <a href="$appxFilename" class="step-link">Download App</a>
+                    <p>Once the certificate is successfully installed, click the link below to install the application. This will launch the Microsoft App Installer to guide you through the process.</p>
+                    <a href="ms-appinstaller:?source=https://bpalmereng.github.io/Plan_Cabinet/$appInstallerFilename" class="step-link">Install App</a>
                 </li>
             </ol>
           </div>
