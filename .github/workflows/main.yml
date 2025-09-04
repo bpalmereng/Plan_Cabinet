@@ -31,11 +31,22 @@ jobs:
           $pfx_bytes = [System.Convert]::FromBase64String($pfx_base64)
           [System.IO.File]::WriteAllBytes("cert.pfx", $pfx_bytes)
           $pfx_password_secure = ConvertTo-SecureString -String $pfx_password -AsPlainText -Force
-          Import-PfxCertificate -FilePath "cert.pfx" -CertStoreLocation Cert:\CurrentUser\My -Password $pfx_password_secure        
+          Import-PfxCertificate -FilePath "cert.pfx" -CertStoreLocation Cert:\CurrentUser\My -Password $pfx_password_secure
+          
+           # ➡️ New step to install C++ workloads
+      - name: Install Visual Studio C++ workloads
+        shell: pwsh
+        run: |
+          Write-Host "Installing Windows App SDK prerequisites for a robust build environment..."
+          & "C:\Program Files (x86)\Microsoft Visual Studio\Installer\vswhere.exe" -latest -products Microsoft.VisualStudio.Product.BuildTools -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -format json | ConvertFrom-Json | Select-Object -First 1 | ForEach-Object {
+              & "$_.installationPath\Common7\Tools\Launch-VsDevCmd.bat"
+              Start-Process -FilePath "C:\Program Files (x86)\Microsoft Visual Studio\Installer\vs_installer.exe" -ArgumentList "modify --installPath ""$($_.installationPath)"" --add Microsoft.VisualStudio.Component.VC.Tools.x86.x64 --quiet --wait --norestart --force" -Wait -PassThru
+          }
+          Write-Host "Prerequisites installation complete."
 
       - name: Build and Package MAUI App for Windows
         run: |
-          dotnet publish -f net8.0-windows10.0.22000.0 -c Release --self-contained -v:d `
+          dotnet publish -f net8.0-windows10.0.22000.0 -c Release --self-contained `
           -p:RuntimeIdentifier=win10-x64 `
           -p:GenerateAppxPackageOnBuild=true `
           -p:EnableCompression=true `
