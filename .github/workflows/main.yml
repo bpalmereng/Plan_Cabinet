@@ -57,8 +57,7 @@ jobs:
         id: find_bundle
         shell: pwsh
         run: |
-          $publishPath = "Plan_Cabinet/Publish"
-          $publishPath = Get-ChildItem -Path "Plan_Cabinet" -Recurse -Directory -Include "Publish" | Where-Object { $_.FullName -like "*\Publish" } | Select-Object -First 1
+          $publishPath = Get-ChildItem -Path $env:GITHUB_WORKSPACE -Recurse -Directory -Include "Publish" | Where-Object { $_.FullName -like "*\Publish" } | Select-Object -First 1
           if (-not $publishPath) { Write-Error "❌ No 'Publish' directory found!"; exit 1 }
           
           $file = Get-ChildItem $publishPath.FullName -Recurse -Include *.msixbundle,*.msix | Where-Object { $_.DirectoryName -notlike "*Dependencies*" } | Select-Object -First 1
