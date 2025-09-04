@@ -57,14 +57,16 @@ jobs:
         id: find_bundle
         shell: pwsh
         run: |
-          $publishPath = Get-ChildItem -Path $env:GITHUB_WORKSPACE -Recurse -Directory -Include "Publish" | Where-Object { $_.FullName -like "*\Publish" } | Select-Object -First 1
-          if (-not $publishPath) { Write-Error "❌ No 'Publish' directory found!"; exit 1 }
-          
-          $file = Get-ChildItem $publishPath.FullName -Recurse -Include *.msixbundle,*.msix | Where-Object { $_.DirectoryName -notlike "*Dependencies*" } | Select-Object -First 1
+          Write-Host "Searching for packages in: $env:GITHUB_WORKSPACE"
+          $file = Get-ChildItem -Path $env:GITHUB_WORKSPACE -Recurse -Include *.msixbundle,*.msix | Where-Object { $_.DirectoryName -notlike "*Dependencies*" } | Select-Object -First 1
           if (-not $file) { Write-Error "❌ No installer package found!"; exit 1 }
+          
+          Write-Host "✅ Found installer package at: $($file.FullName)"
           echo "bundle_path=$($file.FullName)" >> $env:GITHUB_OUTPUT
-          $cer = Get-ChildItem (Split-Path $file.FullName -Parent) -Filter "*.cer" | Select-Object -First 1
+          
+          $cer = Get-ChildItem -Path $env:GITHUB_WORKSPACE -Recurse -Filter "*.cer" | Select-Object -First 1
           if (-not $cer) { Write-Error "❌ No certificate (.cer) found"; exit 1 }
+          Write-Host "✅ Found certificate at: $($cer.FullName)"
           echo "cer_path=$($cer.FullName)" >> $env:GITHUB_OUTPUT
 
       - name: Upload Artifacts
