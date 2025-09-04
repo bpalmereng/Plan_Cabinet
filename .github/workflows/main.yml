@@ -45,9 +45,10 @@ jobs:
           -p:PublishReadyToRun=false `
           -p:ApplicationVersion=$appVersion `
           -p:AppxAutoIncrementPackageRevision=true `
+          -p:AppxPackageDir="AppPackages\" `
           -p:AppxInstallerUri="https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/" `
           -p:AppxInstallerCheckForUpdatesFrequency=OnStart `
-          --self-contained true
+          --self-contained true          
 
       - name: Find Installer Package
         id: find_bundle
