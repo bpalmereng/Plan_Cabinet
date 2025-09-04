@@ -35,7 +35,7 @@ jobs:
 
       - name: Build and Package MAUI App for Windows
         run: |
-          dotnet publish -f net8.0-windows10.0.22000.0 -c Release `
+          dotnet publish -f net8.0-windows10.0.22000.0 -c Release --self-contained `
           -p:RuntimeIdentifier=win10-x64 `
           -p:GenerateAppxPackageOnBuild=true `
           -p:EnableCompression=true `
