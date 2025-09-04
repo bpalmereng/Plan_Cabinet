@@ -23,8 +23,9 @@ jobs:
       - name: Install Windows MAUI workloads
         run: dotnet workload install maui-windows --include-previews
 
-      - name: Import Signing Certificate
+      - name: Import Signing Certificate and get Thumbprint
         shell: pwsh
+        id: get_thumbprint
         run: |
           $pfx_base64 = "${{ secrets.PFX_CERTIFICATE_BASE64 }}"
           $pfx_password = "${{ secrets.PFX_PASSWORD }}"
@@ -32,6 +33,10 @@ jobs:
           [System.IO.File]::WriteAllBytes("cert.pfx", $pfx_bytes)
           $pfx_password_secure = ConvertTo-SecureString -String $pfx_password -AsPlainText -Force
           Import-PfxCertificate -FilePath "cert.pfx" -CertStoreLocation Cert:\CurrentUser\My -Password $pfx_password_secure
+
+          $thumbprint = (Get-ChildItem Cert:\CurrentUser\My | Where-Object { $_.Subject -like "*CN=Brian Palmer - TCPW*" } | Select-Object -ExpandProperty Thumbprint)
+          echo "cert_thumbprint=$thumbprint" >> $env:GITHUB_OUTPUT
+          Write-Host "Certificate Thumbprint: $thumbprint"
 
       - name: Update AppxManifest Version
         shell: pwsh
@@ -46,7 +51,7 @@ jobs:
       - name: Build and Package MAUI App for Windows
         shell: pwsh
         run: |
-            dotnet publish -f net8.0-windows10.0.22000.0 -c Release -p:RuntimeIdentifier=win10-x64 -p:AppxPackageDir='.\Publish' -p:AppxBundle=True -p:PublishReadyToRun=True -p:PublishSingleFile=True -p:GenerateAppInstallerFile=True -p:AppInstallerUri='https://<your-username>.github.io/<your-repository>/' -p:AppxPackageSigningEnabled=true -p:PackageCertificateThumbprint=$thumbprint -p:AppxPackageUpdateUri='https://<your-username>.github.io/<your-repository>/' -p:AppInstallerUpdateFrequency=1 -p:AppInstallerCheckForUpdateFrequency=OnLaunch -p:Version=$appxVersion -p:EnableCompression=True
+          dotnet publish -f net8.0-windows10.0.22000.0 -c Release -p:RuntimeIdentifier=win10-x64 -p:AppxPackageDir='.\Publish' -p:AppxBundle=True -p:PublishReadyToRun=True -p:PublishSingleFile=True -p:GenerateAppInstallerFile=True -p:AppInstallerUri='https://bpalmereng.github.io/Plan_Cabinet/' -p:AppxPackageSigningEnabled=true -p:PackageCertificateThumbprint='${{ steps.get_thumbprint.outputs.cert_thumbprint }}' -p:AppxPackageUpdateUri='https://bpalmereng.github.io/Plan_Cabinet/' -p:AppInstallerUpdateFrequency=1 -p:AppInstallerCheckForUpdateFrequency=OnLaunch -p:EnableCompression=True
 
       - name: Find Installer Package
         id: find_bundle
@@ -122,17 +127,17 @@ jobs:
           <div class="instructions">
             <p>To install the app, you must first trust the developer's certificate. Please follow these two simple steps in order:</p>
             <ol>
-                <li>
-                    <strong>Step 1: Download and Install the Certificate</strong>
-                    <p>Click the link below to download the certificate file (`.cer`). After downloading, open the file and follow the prompts to install it. It is crucial to install it into the <strong>"Trusted People"</strong> or <strong>"Trusted Root Certification Authorities"</strong> certificate store for the <strong>"Local Machine"</strong>.</p>
-                    <p class="warning">Warning: The installation will not work if the certificate is not properly installed and trusted.</p>
-                    <a href="$cerFilename" class="step-link" download>Download Certificate</a>
-                </li>
-                <li>
-                    <strong>Step 2: Install the Application</strong>
-                    <p>Once the certificate is successfully installed, click the link below to download the application package (`.msixbundle`). You can then double-click the downloaded file to install it.</p>
-                    <a href="$appxFilename" class="step-link">Download App</a>
-                </li>
+              <li>
+                <strong>Step 1: Download and Install the Certificate</strong>
+                <p>Click the link below to download the certificate file (`.cer`). After downloading, open the file and follow the prompts to install it. It is crucial to install it into the <strong>"Trusted People"</strong> or <strong>"Trusted Root Certification Authorities"</strong> certificate store for the <strong>"Local Machine"</strong>.</p>
+                <p class="warning">Warning: The installation will not work if the certificate is not properly installed and trusted.</p>
+                <a href="$cerFilename" class="step-link" download>Download Certificate</a>
+              </li>
+              <li>
+                <strong>Step 2: Install the Application</strong>
+                <p>Once the certificate is successfully installed, click the link below to download the application package (`.msixbundle`). You can then double-click the downloaded file to install it.</p>
+                <a href="$appxFilename" class="step-link">Download App</a>
+              </li>
             </ol>
           </div>
           <footer>
