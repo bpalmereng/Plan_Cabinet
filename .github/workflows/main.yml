@@ -54,28 +54,22 @@ jobs:
         shell: pwsh
         run: |
           $packagePath = "${{ steps.find_bundle.outputs.bundle_path }}"
-          # Add-AppxPackage is required to use Get-AppxPackageManifest, but we don't install it.
-          # Instead, we can unzip the file and read the manifest directly.
-          # Create a temporary directory
-          $tempDir = New-Item -ItemType Directory -Path (Join-Path $env:TEMP 'temp_unzip')
-          Expand-Archive -Path $packagePath -DestinationPath $tempDir
-          $manifestFile = Join-Path $tempDir 'AppxManifest.xml'
+          $tempDir = New-Item -ItemType Directory -Path (Join-Path $env:TEMP 'temp_unzip') -Force
+          Expand-Archive -Path $packagePath -DestinationPath $tempDir -Force
           
-          if (-not (Test-Path $manifestFile)) {
-              Write-Host "AppxManifest.xml not found directly. Checking for nested packages..."
-              # For msixbundle, the manifest is in the architecture-specific subfolder
-              $nestedManifest = Get-ChildItem -Path $tempDir -Filter 'AppxManifest.xml' -Recurse | Select-Object -First 1
-              if ($nestedManifest) {
-                  $manifestFile = $nestedManifest.FullName
-              } else {
-                  Write-Error "❌ AppxManifest.xml not found in the package."
-                  exit 1
-              }
+          $manifestFile = Get-ChildItem -Path $tempDir -Filter 'AppxManifest.xml' -Recurse | Select-Object -First 1
+          if (-not $manifestFile) {
+              Write-Error "❌ AppxManifest.xml not found in the package."
+              exit 1
           }
 
-          $manifestXml = [xml](Get-Content -Path $manifestFile)
-          $ns = @{ p = 'http://schemas.microsoft.com/appx/manifest/foundation/windows10' }
-          $identityNode = $manifestXml.SelectSingleNode('//p:Identity', $ns)
+          $manifestXml = New-Object System.Xml.XmlDocument
+          $manifestXml.Load($manifestFile.FullName)
+          
+          $nsManager = New-Object System.Xml.XmlNamespaceManager($manifestXml.NameTable)
+          $nsManager.AddNamespace('p', 'http://schemas.microsoft.com/appx/manifest/foundation/windows10')
+          
+          $identityNode = $manifestXml.SelectSingleNode('//p:Identity', $nsManager)
           
           if ($identityNode) {
               $packageName = $identityNode.GetAttribute('Name')
@@ -95,18 +89,13 @@ jobs:
           $appDir = Split-Path "${{ steps.find_bundle.outputs.bundle_path }}" -Parent
           $appxFilename = [System.IO.Path]::GetFileName("${{ steps.find_bundle.outputs.bundle_path }}")
           
-          # The certificate is already in the same directory as the bundle
           $cer = Get-ChildItem $appDir -Filter "*.cer" | Select-Object -First 1
           if (-not $cer) { Write-Error "❌ No certificate (.cer) found"; exit 1 }
           
-          # Use the same version from the build step
           $version = ($appxFilename -split "_")[1]
-          
-          # Use the dynamically extracted package name and publisher
           $packageName = "${{ steps.extract_identity.outputs.package_name }}"
           $publisherName = "${{ steps.extract_identity.outputs.publisher_name }}"
 
-          # Generate .appinstaller file
           $appInstallerPath = Join-Path $appDir "Plan_Cabinet.appinstaller"
           $msixUri = "https://bpalmereng.github.io/Plan_Cabinet/$appxFilename"
           $appInstallerXml = @"
