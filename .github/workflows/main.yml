@@ -78,7 +78,8 @@ jobs:
         id: generate_and_find
         shell: pwsh
         run: |
-          $appxBundleFile = Get-ChildItem -Path "." -Recurse -Filter "*.msixbundle", "*.msix" | Select-Object -First 1
+          # 💡 FIX: Corrected the Get-ChildItem command to use a Where-Object filter instead of an array.
+          $appxBundleFile = Get-ChildItem -Path "." -Recurse | Where-Object { $_.Name -like "*.msixbundle" -or $_.Name -like "*.msix" } | Select-Object -First 1
           $certFile = Get-ChildItem -Path "." -Recurse -Filter "*.cer" | Select-Object -First 1
           
           if ($null -eq $appxBundleFile) { Write-Error "No .msixbundle/.msix file found."; exit 1 }
