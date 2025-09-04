@@ -36,55 +36,43 @@ jobs:
       - name: Build and Package MAUI App for Windows
         shell: pwsh
         run: |
-          # Use the GitHub Actions run number for the app version
-          $appVersion = "1.0.$($env:GITHUB_RUN_NUMBER).0"
-          
-          dotnet publish -f net8.0-windows10.0.22000.0 -c Release -p:WindowsPackageType=MSIX -p:RuntimeIdentifier=win-x64 -p:Platform=x64 -p:PublishReadyToRun=false -p:ApplicationVersion=$appVersion --self-contained true
+          $versionNumber = (Get-Content "Plan_Cabinet.csproj" -Raw | Select-String -Pattern "<ApplicationVersion>(\d+)</ApplicationVersion>").Matches.Groups[1].Value
+          dotnet publish -f net8.0-windows10.0.22000.0 -c Release `
+            -p:RuntimeIdentifier=win10-x64 `
+            -p:AppxPackageSigningEnabled=true `
+            -p:PackageCertificateThumbprint="$(Get-PfxCertificate -FilePath "cert.pfx" | Select-Object -ExpandProperty Thumbprint)" `
+            -p:GenerateAppxPackageOnBuild=true `
+            -p:EnableCompression=true `
+            -p:AppxAutoIncrementPackageRevision=True `
+            -p:AppxPublishInstaller=true `
+            -p:AppxInstallerUri="https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/" `
+            -p:AppxInstallerUpdateUri="https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/" `
+            -p:AppxPackageDir="AppPackages\"
 
-      - name: Find Installer Package
+      - name: Find and set output variables for generated files
         id: find_bundle
         shell: pwsh
         run: |
-          $file = Get-ChildItem "Plan_Cabinet/bin/x64/Release/net8.0-windows10.0.22000.0/win-x64/AppPackages" -Recurse -Include *.msixbundle,*.msix | Where-Object { $_.DirectoryName -notlike "*Dependencies*" } | Select-Object -First 1
-          if (-not $file) { Write-Error "❌ No installer package found!"; exit 1 }
-          echo "bundle_path=$($file.FullName)" >> $env:GITHUB_OUTPUT
-
-      - name: Generate App Installer
-        id: generate_installer
-        shell: pwsh
-        run: |
-          $appDir = Split-Path "${{ steps.find_bundle.outputs.bundle_path }}" -Parent
-          $appxFilename = [System.IO.Path]::GetFileName("${{ steps.find_bundle.outputs.bundle_path }}")
-          
-          $cer = Get-ChildItem $appDir -Filter "*.cer" | Select-Object -First 1
-          if (-not $cer) { Write-Error "❌ No certificate (.cer) found"; exit 1 }
-          
-          $version = ($appxFilename -split "_")[1]
-          
-          # Using hardcoded values from your csproj to avoid build issues
-          $packageName = "com.companyname.plan_cabinet"
-          $publisherName = "CN=Brian Palmer - TCPW"
-
-          $appInstallerPath = Join-Path $appDir "Plan_Cabinet.appinstaller"
-          $msixUri = "https://bpalmereng.github.io/Plan_Cabinet/$appxFilename"
-          $appInstallerXml = @"
-          <?xml version="1.0" encoding="utf-8"?>
-          <AppInstaller Uri="$msixUri" Version="$version" xmlns="http://schemas.microsoft.com/appx/appinstaller/2017/2">
-            <MainPackage Name="$packageName" Publisher="$publisherName" Version="$version" Uri="$msixUri" />
-            <UpdateSettings>
-              <OnLaunch HoursBetweenUpdateChecks="0" />
-              <AutomaticBackgroundTask />
-            </UpdateSettings>
-            <Dependencies>
-              <Package Name="Microsoft.WindowsAppRuntime.1.4" Publisher="CN=Microsoft Corporation, O=Microsoft Corporation, L=Redmond, S=Washington, C=US" Version="404.41208.0" />
-            </Dependencies>
-          </AppInstaller>
-          "@
-          Set-Content -Path $appInstallerPath -Value $appInstallerXml -Encoding UTF8
-          
-          echo "installer_path=$appInstallerPath" >> $env:GITHUB_OUTPUT
-          echo "cer_path=$($cer.FullName)" >> $env:GITHUB_OUTPUT
-          echo "appx_path=${{ steps.find_bundle.outputs.bundle_path }}" >> $env:GITHUB_OUTPUT
+          $appInstallerFile = Get-ChildItem -Path "AppPackages" -Recurse -Filter "*.appinstaller" | Select-Object -First 1
+          if ($null -eq $appInstallerFile) {
+            Write-Error "No .appinstaller file found."
+            exit 1
+          }
+          $appxBundleFile = Get-ChildItem -Path "AppPackages" -Recurse -Filter "*.msix" | Select-Object -First 1
+          if ($null -eq $appxBundleFile) {
+            Write-Error "No .msix file found."
+            exit 1
+          }
+          $certFile = Get-ChildItem -Path "AppPackages" -Recurse -Filter "*.cer" | Select-Object -First 1
+          if ($null -eq $certFile) {
+            Write-Error "No .cer file found."
+            exit 1
+          }
+          echo "appinstaller_path=$($appInstallerFile.FullName)" >> $env:GITHUB_OUTPUT
+          echo "bundle_path=$($appxBundleFile.FullName)" >> $env:GITHUB_OUTPUT
+          echo "cer_path=$($certFile.FullName)" >> $env:GITHUB_OUTPUT
+          echo "appinstaller_name=$($appInstallerFile.Name)" >> $env:GITHUB_OUTPUT
+          echo "cer_name=$($certFile.Name)" >> $env:GITHUB_OUTPUT
 
       - name: Upload Artifacts to GitHub Pages
         uses: actions/upload-artifact@v4
@@ -92,8 +80,8 @@ jobs:
           name: AppInstaller-Files
           path: |
             ${{ steps.find_bundle.outputs.bundle_path }}
-            ${{ steps.generate_installer.outputs.installer_path }}
-            ${{ steps.generate_installer.outputs.cer_path }}
+            ${{ steps.find_bundle.outputs.appinstaller_path }}
+            ${{ steps.find_bundle.outputs.cer_path }}
           retention-days: 7
 
   deploy-pages:
@@ -109,20 +97,98 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: AppInstaller-Files
-      
+
+      - name: Create installer guide
+        run: |
+          cat <<'EOF' > Certificate_Install_Guide.md
+          # Certificate and App Installation Guide
+
+          This guide will walk you through the process of installing the required developer certificate and the Plan_Cabinet application. This is a
+          one-time process to ensure that your system trusts the application.
+
+          ## Step 1: Install the Certificate
+
+          1.  **Download the Certificate:** Click the "Download Certificate" button on the installation page. The file name will be `Plan_Cabinet.cer`.
+          2.  **Open the Certificate:** Locate the downloaded `.cer` file and double-click it. This will open the Certificate window.
+          3.  **Choose "Install Certificate":** In the window, click on the **"Install Certificate..."** button.
+          4.  **Select "Local Machine":** A new wizard will open. In the first step, select **"Local Machine"** as the store location. This is very important! Click **"Next"**.
+          5.  **Place the Certificate:** In the next step, select **"Place all certificates in the following store"**. Click the **"Browse..."** button.
+          6.  **Choose the Store:** From the list, find and select **"Trusted People"**. Click **"OK"** and then **"Next"**.
+          7.  **Complete Installation:** Click **"Finish"**. You will receive a security warning; confirm it to complete the installation.
+
+          ## Step 2: Install the Application
+
+          1.  **Return to the Installation Page:** Go back to the web page you were on.
+          2.  **Click "Install App":** Now that the certificate is trusted, click the **"Install App"** button. This will launch the Microsoft App Installer.
+          3.  **Follow the Prompts:** The App Installer will guide you through the final steps of installing the application.
+
+          If you encounter any issues, please ensure the certificate was installed correctly for the "Local Machine" in the "Trusted People" store.
+          EOF
+
       - name: Create index.html with download link
         run: |
-          FILE=$(ls *.appinstaller 2>/dev/null | head -n 1)
-          echo "<html><body><h1>Plan_Cabinet App Installer</h1><p>Click <a href=\"$FILE\">here to install</a> and update the app.</p></body></html>" > index.html
+          APPINSTALLER_FILE=$(ls *.appinstaller 2>/dev/null | head -n 1)
+          CERTIFICATE_FILE=$(ls *.cer 2>/dev/null | head -n 1)
+          
+          if [ -z "$APPINSTALLER_FILE" ] || [ -z "$CERTIFICATE_FILE" ]; then
+            echo "Error: App installer or certificate file not found."
+            exit 1
+          fi
+
+          echo "Writing index.html with App Installer file: $APPINSTALLER_FILE"
+          
+          cat <<EOF > index.html
+          <!DOCTYPE html>
+          <html lang="en">
+          <head>
+          <meta charset="UTF-8">
+          <meta name="viewport" content="width=device-width, initial-scale=1.0">
+          <title>Plan_Cabinet App Installation</title>
+          <style>
+          body { font-family: sans-serif; line-height: 1.6; max-width: 800px; margin: auto; padding: 20px; background-color: #f0f4f8; color: #333; }
+          .container { background-color: #fff; padding: 30px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1); border: 1px solid #e2e8f0; }
+          h1 { color: #2a4365; text-align: center; margin-bottom: 20px; }
+          .instructions { background-color: #ebf8ff; border-left: 5px solid #4299e1; padding: 20px; margin-top: 20px; border-radius: 8px; }
+          .instructions p { margin: 0 0 15px 0; }
+          ol { padding-left: 25px; }
+          ol li { margin-bottom: 15px; }
+          .step-link { display: inline-block; padding: 12px 24px; background-color: #4299e1; color: white; text-decoration: none; border-radius: 9999px; font-weight: bold; text-align: center; transition: background-color 0.3s ease; }
+          .step-link:hover { background-color: #3182ce; }
+          .warning { color: #e53e3e; font-weight: bold; margin-top: 10px; }
+          footer { text-align: center; margin-top: 30px; font-size: 0.8em; color: #718096; }
+          </style>
+          </head>
+          <body>
+          <div class="container">
+          <h1>Plan_Cabinet App Installation</h1>
+          <div class="instructions">
+            <p>To install the app, you must first trust the developer's certificate. Please follow these two simple steps in order:</p>
+            <ol>
+                <li>
+                    <strong>Step 1: Download and Install the Certificate</strong>
+                    <p>Click the link below to download the certificate file (`.cer`). After downloading, open the file and follow the prompts to install it. It is crucial to install it into the <strong>"Trusted People"</strong> or <strong>"Trusted Root Certification Authorities"</strong> certificate store for the <strong>"Local Machine"</strong>.</p>
+                    <p class="warning">Warning: The installation will not work if the certificate is not properly installed and trusted.</p>
+                    <a href="$CERTIFICATE_FILE" class="step-link" download>Download Certificate</a>
+                </li>
+                <li>
+                    <strong>Step 2: Install the Application</strong>
+                    <p>Once the certificate is successfully installed, click the link below to install the application. This will launch the Microsoft App Installer to guide you through the process.</p>
+                    <a href="ms-appinstaller:?source=https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/$APPINSTALLER_FILE" class="step-link">Install App</a>
+                </li>
+            </ol>
+          </div>
+          <footer>
+            <p>This page is automatically generated by GitHub Actions.</p>
+          </footer>
+          </div>
+          </body>
+          </html>
+          EOF
 
       - name: Setup Pages
         uses: actions/configure-pages@v5
 
-      - name: Upload Pages artifact
-        uses: actions/upload-pages-artifact@v3
+      - name: Upload pages
+        uses: actions/upload-pages@v5
         with:
-          path: .
-
-      - name: Deploy to GitHub Pages
-        id: deployment
-        uses: actions/deploy-pages@v4
+          path: '.'
