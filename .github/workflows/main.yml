@@ -36,14 +36,14 @@ jobs:
       - name: Build and Package MAUI App for Windows
         run: |
           dotnet publish -f net8.0-windows10.0.22000.0 -c Release `
-          -p:RuntimeIdentifier=win10-x64 `
-          -p:GenerateAppxPackageOnBuild=true `
-          -p:GenerateAppInstallerFile=true `
-          -p:EnableCompression=true `
-          -p:AppxAutoIncrementPackageRevision=true `
-          -p:AppxInstallerUri="https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/" `
-          -p:AppxInstallerUpdateUri="https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/" `
-          -p:AppxPackageDir="AppPackages\"
+            -p:RuntimeIdentifier=win10-x64 `
+            -p:GenerateAppxPackageOnBuild=true `
+            -p:GenerateAppInstallerFile=true `
+            -p:EnableCompression=true `
+            -p:AppxAutoIncrementPackageRevision=true `
+            -p:AppxInstallerUri="https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/" `
+            -p:AppxInstallerUpdateUri="https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/" `
+            -p:AppxPackageDir="AppPackages\"
 
       - name: Find and set output variables for generated files
         id: find_bundle
