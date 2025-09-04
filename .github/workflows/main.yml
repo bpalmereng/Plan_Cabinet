@@ -36,14 +36,28 @@ jobs:
       - name: Build and Package MAUI App for Windows
         run: |
           dotnet publish -f net8.0-windows10.0.22000.0 -c Release `
-            -p:RuntimeIdentifier=win10-x64 `
-            -p:GenerateAppxPackageOnBuild=true `
-            -p:GenerateAppInstallerFile=true `
-            -p:EnableCompression=true `
-            -p:AppxAutoIncrementPackageRevision=true `
-            -p:AppxInstallerUri="https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/" `
-            -p:AppxInstallerUpdateUri="https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/" `
-            -p:AppxPackageDir="AppPackages\"
+          -p:RuntimeIdentifier=win10-x64 `
+          -p:GenerateAppxPackageOnBuild=true `
+          -p:EnableCompression=true `
+          -p:AppxAutoIncrementPackageRevision=true `
+          -p:AppxPublishInstaller=true `
+          -p:AppxInstallerUri="https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/" `
+          -p:AppxInstallerUpdateUri="https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/" `
+          -p:AppxPackageDir="AppPackages\"
+    
+          # Check for the existence of the directory and files
+          if (Test-Path -Path "AppPackages" -PathType Container) {
+          Write-Host "AppPackages directory exists."
+          } else {
+          Write-Error "AppPackages directory was not created. The 'dotnet publish' command likely failed."
+          exit 1
+          }
+    
+          $appInstallerFile = Get-ChildItem -Path "AppPackages" -Recurse -Filter "*.appinstaller" | Select-Object -First 1
+          if ($null -eq $appInstallerFile) {
+          Write-Error "The 'dotnet publish' command completed, but no .appinstaller file was found."
+          exit 1
+          }
 
       - name: Find and set output variables for generated files
         id: find_bundle
