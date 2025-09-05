@@ -51,7 +51,9 @@ jobs:
       - name: Build and Package MAUI App for Windows
         shell: pwsh
         run: |
-          dotnet publish -f net8.0-windows10.0.22000.0 -c Release -p:RuntimeIdentifier=win10-x64 -p:AppxPackageDir='.\Publish' -p:AppxBundle=True -p:PublishReadyToRun=True -p:PublishSingleFile=True -p:GenerateAppInstallerFile=True -p:AppInstallerUri='https://bpalmereng.github.io/Plan_Cabinet/' -p:AppxPackageSigningEnabled=true -p:PackageCertificateThumbprint='${{ steps.get_thumbprint.outputs.cert_thumbprint }}' -p:AppxPackageUpdateUri='https://bpalmereng.github.io/Plan_Cabinet/' -p:AppInstallerUpdateFrequency=1 -p:AppInstallerCheckForUpdateFrequency=OnLaunch -p:EnableCompression=True
+          # The AppxBundle=True flag can cause issues with single-file publishing.
+          # We'll build a single .msix file instead of a bundle.
+          dotnet publish -f net8.0-windows10.0.22000.0 -c Release -p:RuntimeIdentifier=win10-x64 -p:AppxPackageDir='.\Publish' -p:AppxBundle=False -p:PublishReadyToRun=True -p:PublishSingleFile=True -p:GenerateAppInstallerFile=True -p:AppInstallerUri='https://bpalmereng.github.io/Plan_Cabinet/' -p:AppxPackageSigningEnabled=true -p:PackageCertificateThumbprint='${{ steps.get_thumbprint.outputs.cert_thumbprint }}' -p:AppxPackageUpdateUri='https://bpalmereng.github.io/Plan_Cabinet/' -p:AppInstallerUpdateFrequency=1 -p:AppInstallerCheckForUpdateFrequency=OnLaunch -p:EnableCompression=True
 
       - name: Find Installer Package
         id: find_bundle
@@ -77,6 +79,12 @@ jobs:
             ${{ steps.find_bundle.outputs.bundle_path }}
             ${{ steps.find_bundle.outputs.cer_path }}
           retention-days: 7
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
+        with:
+          artifact_path: .
 
   deploy-pages:
     needs: build
@@ -161,7 +169,7 @@ jobs:
         uses: actions/upload-pages-artifact@v3
         with:
           path: .
-
+      
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
