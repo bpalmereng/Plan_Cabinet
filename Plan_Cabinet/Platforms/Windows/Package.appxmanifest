@@ -39,7 +39,7 @@
       </uap:VisualElements>
       <Extensions>
         <desktop7:Extension Category="windows.shortcut">
-          <desktop7:Shortcut Icon="appicon.icon" File="Plan_Cabinet.exe" />
+          <desktop7:Shortcut Icon="appiconLogo.scale-125.png" File="Plan_Cabinet.exe" />
         </desktop7:Extension>
       </Extensions>
     </Application>
