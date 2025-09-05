@@ -155,18 +155,18 @@
     <!-- Raw Assets (also remove the "Resources\Raw" prefix) -->
     <MauiAsset Include="Resources\Raw\**" LogicalName="%(RecursiveDir)%(Filename)%(Extension)" />
   </ItemGroup>
-
-  <!-- The custom target below ensures the appicon.ico is copied after it has been generated. -->
-  <Target Name="CopyAppIconForWindowsShortcut" AfterTargets="_MauiGenerateWindowsAppIcon" Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'windows'">
-    <Message Text="Copying appicon.ico for Windows shortcut..." Importance="high" />
-    <Copy SourceFiles="obj\$(TargetFramework)\win-x64\appicon.ico" DestinationFolder="$(OutputPath)" />
-  </Target>
+  
   
   <ItemGroup>
+    <None Remove="Platforms\Windows\appicon.png" />
     <None Remove="Resources\Images\AddIconBlack.png" />
     <None Remove="Resources\Images\AddIconBlue.png" />
     <None Remove="Resources\Images\SearchIconBlack.png" />
     <None Remove="Resources\Images\SearchIconBlue.png" />
+  </ItemGroup>
+  
+  <ItemGroup>
+    <MauiImage Include="Platforms\Windows\Package.appxmanifest" />
   </ItemGroup>
 
   <ItemGroup>
@@ -180,6 +180,12 @@
     <PackageReference Include="Microsoft.Maui.Controls.Compatibility" Version="8.0.10" />
     <PackageReference Include="Microsoft.Extensions.Logging.Debug" Version="9.0.7" />
     <PackageReference Include="Syncfusion.Maui.PdfViewer" Version="26.1.35" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <MauiImage Include="Platforms\Windows\appicon.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </MauiImage>
   </ItemGroup>
 
   <ItemGroup>
