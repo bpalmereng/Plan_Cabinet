@@ -39,9 +39,8 @@
       </uap:VisualElements>
       <Extensions>
         <desktop7:Extension Category="windows.shortcut">
-          <!-- The Icon path has been changed to a specific PNG asset file from the package -->
-          <desktop7:Shortcut Icon="AppIconLogo.altform-lightunplated_targetsize-24.png" File="$targetnametoken$.exe" />
-        </desktop7:Extension>
+          <desktop7:Shortcut Icon="appicon.ico" File="$targetnametoken$.exe" />
+        </desktop7:Extension>      
       </Extensions>
     </Application>
   </Applications>

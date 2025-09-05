@@ -121,6 +121,14 @@
     <LangVersion>latest</LangVersion>
   </PropertyGroup>
 
+  <!-- This item group is required to copy the generated Windows icon for shortcut creation. -->
+  <!-- The file path references the output of the MauiIcon build action in the obj folder. -->
+  <ItemGroup Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'windows'">
+    <Content Include="obj\$(TargetFramework)\win-x64\appicon.ico" Link="appicon.ico">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
+
   <ItemGroup>
     <!-- App Icon -->
     <MauiIcon Include="Resources\AppIcon\appicon.svg" ForegroundFile="Resources\AppIcon\appiconfg.svg" />
