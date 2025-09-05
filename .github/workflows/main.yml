@@ -51,40 +51,24 @@ jobs:
       - name: Build and Package MAUI App for Windows
         shell: pwsh
         run: |
-          # The AppxBundle=True flag can cause issues with single-file publishing.
-          # We'll build a single .msix file instead of a bundle.
           dotnet publish -f net8.0-windows10.0.22000.0 -c Release -p:RuntimeIdentifier=win10-x64 -p:AppxPackageDir='.\Publish' -p:AppxBundle=False -p:PublishReadyToRun=True -p:PublishSingleFile=True -p:GenerateAppInstallerFile=True -p:AppInstallerUri='https://bpalmereng.github.io/Plan_Cabinet/' -p:AppxPackageSigningEnabled=true -p:PackageCertificateThumbprint='${{ steps.get_thumbprint.outputs.cert_thumbprint }}' -p:AppxPackageUpdateUri='https://bpalmereng.github.io/Plan_Cabinet/' -p:AppInstallerUpdateFrequency=1 -p:AppInstallerCheckForUpdateFrequency=OnLaunch -p:EnableCompression=True
 
       - name: Find Installer Package
         id: find_bundle
         shell: pwsh
         run: |
-          Write-Host "Searching for packages in: $env:GITHUB_WORKSPACE"
           $file = Get-ChildItem -Path $env:GITHUB_WORKSPACE -Recurse -Include *.msixbundle,*.msix | Where-Object { $_.DirectoryName -notlike "*Dependencies*" } | Select-Object -First 1
           if (-not $file) { Write-Error "❌ No installer package found!"; exit 1 }
-          
-          Write-Host "✅ Found installer package at: $($file.FullName)"
           echo "bundle_path=$($file.FullName)" >> $env:GITHUB_OUTPUT
           
           $cer = Get-ChildItem -Path $env:GITHUB_WORKSPACE -Recurse -Filter "*.cer" | Select-Object -First 1
           if (-not $cer) { Write-Error "❌ No certificate (.cer) found"; exit 1 }
-          Write-Host "✅ Found certificate at: $($cer.FullName)"
           echo "cer_path=$($cer.FullName)" >> $env:GITHUB_OUTPUT
 
-      - name: Upload Artifacts
-        uses: actions/upload-artifact@v4
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
         with:
-          name: AppInstaller-Files
-          path: |
-            ${{ steps.find_bundle.outputs.bundle_path }}
-            ${{ steps.find_bundle.outputs.cer_path }}
-          retention-days: 7
-
-      - name: Deploy to GitHub Pages
-        id: deployment
-        uses: actions/deploy-pages@v4
-        with:
-          artifact_path: .
+          path: .
 
   deploy-pages:
     needs: build
@@ -95,81 +79,9 @@ jobs:
       id-token: write
 
     steps:
-      - name: Download artifacts
-        uses: actions/download-artifact@v4
-        with:
-          name: AppInstaller-Files
-      
-      - name: Generate index.html with download links
-        id: generate_and_find
-        shell: pwsh
-        run: |
-          $appxBundleFile = Get-ChildItem -Path "." -Recurse | Where-Object { $_.Name -like "*.msixbundle" -or $_.Name -like "*.msix" } | Select-Object -First 1
-          $certFile = Get-ChildItem -Path "." -Recurse -Filter "*.cer" | Select-Object -First 1
-          
-          if ($null -eq $appxBundleFile) { Write-Error "No .msixbundle/.msix file found."; exit 1 }
-          if ($null -eq $certFile) { Write-Error "No .cer file found."; exit 1 }
-          
-          $appxFilename = $appxBundleFile.Name
-          $cerFilename = $certFile.Name
-          
-          $htmlContent = @"
-          <!DOCTYPE html>
-          <html lang="en">
-          <head>
-          <meta charset="UTF-8">
-          <meta name="viewport" content="width=device-width, initial-scale=1.0">
-          <title>Plan_Cabinet App Installation</title>
-          <style>
-          body { font-family: sans-serif; line-height: 1.6; max-width: 800px; margin: auto; padding: 20px; background-color: #f0f4f8; color: #333; }
-          .container { background-color: #fff; padding: 30px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1); border: 1px solid #e2e8f0; }
-          h1 { color: #2a4365; text-align: center; margin-bottom: 20px; }
-          .instructions { background-color: #ebf8ff; border-left: 5px solid #4299e1; padding: 20px; margin-top: 20px; border-radius: 8px; }
-          .instructions p { margin: 0 0 15px 0; }
-          ol { padding-left: 25px; }
-          ol li { margin-bottom: 15px; }
-          .step-link { display: inline-block; padding: 12px 24px; background-color: #4299e1; color: white; text-decoration: none; border-radius: 9999px; font-weight: bold; text-align: center; transition: background-color 0.3s ease; }
-          .step-link:hover { background-color: #3182ce; }
-          .warning { color: #e53e3e; font-weight: bold; margin-top: 10px; }
-          footer { text-align: center; margin-top: 30px; font-size: 0.8em; color: #718096; }
-          </style>
-          </head>
-          <body>
-          <div class="container">
-          <h1>Plan_Cabinet App Installation</h1>
-          <div class="instructions">
-            <p>To install the app, you must first trust the developer's certificate. Please follow these two simple steps in order:</p>
-            <ol>
-              <li>
-                <strong>Step 1: Download and Install the Certificate</strong>
-                <p>Click the link below to download the certificate file (`.cer`). After downloading, open the file and follow the prompts to install it. It is crucial to install it into the <strong>"Trusted People"</strong> or <strong>"Trusted Root Certification Authorities"</strong> certificate store for the <strong>"Local Machine"</strong>.</p>
-                <p class="warning">Warning: The installation will not work if the certificate is not properly installed and trusted.</p>
-                <a href="$cerFilename" class="step-link" download>Download Certificate</a>
-              </li>
-              <li>
-                <strong>Step 2: Install the Application</strong>
-                <p>Once the certificate is successfully installed, click the link below to download the application package (`.msixbundle`). You can then double-click the downloaded file to install it.</p>
-                <a href="$appxFilename" class="step-link">Download App</a>
-              </li>
-            </ol>
-          </div>
-          <footer>
-            <p>This page is automatically generated by GitHub Actions.</p>
-          </footer>
-          </div>
-          </body>
-          </html>
-          "@
-          Set-Content -Path "index.html" -Value $htmlContent -Encoding UTF8
-
       - name: Setup Pages
         uses: actions/configure-pages@v5
 
-      - name: Upload Pages artifact
-        uses: actions/upload-pages-artifact@v3
-        with:
-          path: .
-      
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
