@@ -36,12 +36,7 @@
         BackgroundColor="transparent">
         <uap:DefaultTile Square71x71Logo="$placeholder$.png" Wide310x150Logo="$placeholder$.png" Square310x310Logo="$placeholder$.png" />
         <uap:SplashScreen Image="$placeholder$.png" />
-      </uap:VisualElements>
-      <Extensions>
-        <desktop7:Extension Category="windows.shortcut">
-          <desktop7:Shortcut Icon="appiconLargeTile.png" File="$targetnametoken$.exe" />
-        </desktop7:Extension>      
-      </Extensions>
+      </uap:VisualElements>      
     </Application>
   </Applications>
 
