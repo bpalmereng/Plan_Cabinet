@@ -9,23 +9,27 @@ namespace Plan_Cabinet.Connections
     {
         public ObservableCollection<Digital_Plans> Digital_Plans = new ObservableCollection<Digital_Plans>();
 
-        private static readonly string ConnectionString = @"data source=192.168.1.4;initial Catalog=Plan_Cabinet;User ID=Plan_Inventory_Admin;Password=Pworks78;Encrypt=false";
-        private readonly SqlConnection sqlcon = new SqlConnection(ConnectionString);
+        private readonly string _connectionString;
+        private readonly SqlConnection sqlcon;
         private readonly Dictionary<string, SqlParameter> parameters = new();
 
         public string Query_;
 
-        public ConnectionQuery(string Query_)
+        // The constructor now accepts the connection string
+        public ConnectionQuery(string connectionString, string Query_)
         {
+            _connectionString = connectionString;
             this.Query_ = Query_;
+            this.sqlcon = new SqlConnection(_connectionString);
         }
-
+        
         public void AddParameter(string name, SqlDbType type, object value)
         {
             parameters[name] = new SqlParameter(name, type) { Value = value };
         }
 
-        public bool IsServerConnected()
+        // Renamed from IsServerConnected to be more concise
+        public bool IsConnected()
         {
             using (var connection = new SqlConnection(sqlcon.ConnectionString))
             {
@@ -39,6 +43,20 @@ namespace Plan_Cabinet.Connections
                     return false;
                 }
             }
+        }
+
+        // New helper method to execute a command with retry logic
+        public async Task<T> ExecuteWithRetryAsync<T>(Func<Task<T>> databaseAction, Func<Task<bool>> retryPrompt)
+        {
+            if (!IsConnected())
+            {
+                if (await retryPrompt())
+                {
+                    return await ExecuteWithRetryAsync(databaseAction, retryPrompt);
+                }
+                throw new InvalidOperationException("Database connection failed after user cancellation.");
+            }
+            return await databaseAction();
         }
 
         // Synchronous open/close (keep if needed)

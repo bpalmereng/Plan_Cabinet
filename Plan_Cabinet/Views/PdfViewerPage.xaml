@@ -19,7 +19,8 @@
         <Grid Grid.Row="0">
             <pdfViewer:SfPdfViewer x:Name="pdfViewer"
                        DocumentSource="{Binding PdfStreamSource}"
-                                   DocumentLoaded="OnPdfViewerDocumentLoaded"
+                       DocumentLoaded="OnPdfViewerDocumentLoaded"
+                       PageNumber="{Binding PageNumber, Mode=TwoWay}"
                        SizeChanged="OnPdfViewerSizeChanged">
             </pdfViewer:SfPdfViewer>
         </Grid>
