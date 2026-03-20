@@ -1,5 +1,4 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
-using Microsoft.Data.SqlClient;
 using Plan_Cabinet.Connections;
 using Plan_Cabinet.Models;
 using Plan_Cabinet.Sharepoint;
@@ -176,57 +175,41 @@ namespace Plan_Cabinet.View_Models
 
         private void CloseFilterPopup() => IsFilterPopupVisible = false;
 
-        private async Task FetchPlansAsync(string sql, Dictionary<string, object>? parameters = null)
+        public async Task LoadPlansAsync()
         {
             try
             {
                 IsBusy = true;
-                BusyText = "Connecting to database...";
 
-                using var connection = new ConnectionQuery(_localConnectionString, sql);
-                if (parameters != null)
+                const string query = "SELECT * FROM Digital_Plans ORDER BY Plan_Name ASC";
+                using var connection = new ConnectionQuery(query);
+                PlanList = await connection.Get_Plans();
+
+                if (PlanList == null || PlanList.Count == 0)
                 {
-                    foreach (var param in parameters)
-                    {
-                        // Use the existing AddParameter method
-                        connection.AddParameter(param.Key, SqlDbType.VarChar, param.Value);
-                    }
+                    await ShowAlertRequested.Invoke("Notice", "No plans found.", "OK");
                 }
-
-                var plans = await connection.ExecuteWithRetryAsync(
-                    async () => await connection.Get_Plans(),
-                    async () => await ShowAlertWithChoiceRequested.Invoke("Connection Lost", "Please connect to the VPN.", "Retry", "Cancel")
-                );
-
-                PlanList = new ObservableCollection<Digital_Plans>(plans);
             }
             catch (Exception ex)
             {
-                Debug.WriteLine($"FetchPlansAsync Error: {ex}");
-                await ShowAlertRequested.Invoke("Database Error", ex.Message, "OK");
+                Debug.WriteLine($"LoadPlansAsync Error: {ex}");
+                await ShowAlertRequested.Invoke("Load Error", ex.Message, "OK");
             }
             finally
             {
                 IsBusy = false;
-                BusyText = "Loading Please Wait......";
             }
-        }
-
-        public async Task LoadPlansAsync()
-        {
-            string query = "SELECT * FROM Digital_Plans ORDER BY Plan_Name ASC";
-            await FetchPlansAsync(query);
         }
 
         public async Task FilterPlansAsync(string columnName, string? searchQuery = null)
         {
             CurrentFilterColumn = columnName;
+
             try
             {
                 IsBusy = true;
                 string safeColumnName = GetSafeColumnName(columnName);
                 string sql;
-                Dictionary<string, object>? parameters = null;
 
                 if (!string.IsNullOrWhiteSpace(searchQuery))
                 {
@@ -234,42 +217,35 @@ namespace Plan_Cabinet.View_Models
                         SELECT * FROM Digital_Plans
                         WHERE {safeColumnName} LIKE @Query
                         ORDER BY PATINDEX(@Query, {safeColumnName}) ASC, LEN({safeColumnName}) ASC";
-                    parameters = new Dictionary<string, object>
-                    {
-                        { "@Query", $"%{searchQuery}%" }
-                    };
                 }
                 else
                 {
                     sql = $"SELECT * FROM Digital_Plans ORDER BY {safeColumnName}";
                 }
 
-                using var connection = new ConnectionQuery(_localConnectionString, sql);
+                using var connection = new ConnectionQuery(sql);
 
-                if (parameters != null)
+                if (!string.IsNullOrWhiteSpace(searchQuery))
                 {
-                    foreach (var param in parameters)
-                    {
-                        connection.AddParameter(param.Key, SqlDbType.VarChar, param.Value);
-                    }
+                    connection.AddParameter("@Query", SqlDbType.VarChar, $"%{searchQuery}%");
                 }
 
-                var plans = await connection.ExecuteWithRetryAsync(
-                    async () => await connection.Get_Plans(),
-                    async () => await ShowAlertWithChoiceRequested.Invoke("Connection Lost", "Please connect to the VPN.", "Retry", "Cancel")
-                );
+                // Assuming Get_Plans is an async method that returns the ObservableCollection
+                PlanList = await connection.Get_Plans();
 
-                PlanList = new ObservableCollection<Digital_Plans>(plans);
+                // CloseFilterPopup() needs to be handled somewhere if it's not a part of this ViewModel
+                // CloseFilterPopup();
             }
             catch (Exception ex)
             {
-                Debug.WriteLine($"FilterPlansAsync Error: {ex}");
-                await ShowAlertRequested.Invoke("Database Error", ex.Message, "OK");
+                if (ShowAlertRequested != null)
+                {
+                    await ShowAlertRequested.Invoke("Filter Error", ex.Message, "OK");
+                }
             }
             finally
             {
                 IsBusy = false;
-                BusyText = "Loading Please Wait......";
             }
         }
 
@@ -459,29 +435,25 @@ namespace Plan_Cabinet.View_Models
                         Plan_Date = @Plan_Date
                     WHERE PlanID = @PlanID";
 
-                using var connection = new ConnectionQuery(_localConnectionString, query);
+                using var connection = new ConnectionQuery(query);
+                var command = connection.Command();
 
-                var rowsAffected = await connection.ExecuteWithRetryAsync(async () =>
-                {
-                    var command = connection.Command();
-                    command.Parameters.AddWithValue("@PlanID", SelectedPlan.PlanID);
-                    command.Parameters.AddWithValue("@Plan_Name", newPlanName);
-                    command.Parameters.AddWithValue("@Rd_Name", RdNameEdit ?? string.Empty);
-                    command.Parameters.AddWithValue("@Subdivision", SubdivisionEdit ?? string.Empty);
-                    command.Parameters.AddWithValue("@Reference", ReferenceEdit ?? string.Empty);
-                    command.Parameters.AddWithValue("@Plan_Date", PlanDateEdit);
+                command.Parameters.AddWithValue("@PlanID", SelectedPlan.PlanID);
+                command.Parameters.AddWithValue("@Plan_Name", newPlanName);
+                command.Parameters.AddWithValue("@Rd_Name", RdNameEdit ?? string.Empty);
+                command.Parameters.AddWithValue("@Subdivision", SubdivisionEdit ?? string.Empty);
+                command.Parameters.AddWithValue("@Reference", ReferenceEdit ?? string.Empty);
+                command.Parameters.AddWithValue("@Plan_Date", PlanDateEdit);
 
-                    await connection.OpenConnectionAsync();
-                    int result = await command.ExecuteNonQueryAsync();
-                    await connection.CloseConnectionAsync();
-                    return result;
-                }, async () => await ShowAlertWithChoiceRequested.Invoke("Connection Lost", "Please connect to the VPN.", "Retry", "Cancel"));
+                await connection.OpenConnectionAsync();
+                int rows = await command.ExecuteNonQueryAsync();
+                await connection.CloseConnectionAsync();
 
-                return rowsAffected > 0;
+                return rows > 0;
             }
             catch (Exception ex)
             {
-                Debug.WriteLine($"UpdatePlanInDatabaseAsync Error: {ex}");
+                Debug.WriteLine($"Database update failed: {ex}");
                 return false;
             }
         }
@@ -552,13 +524,13 @@ namespace Plan_Cabinet.View_Models
 
         private async Task DeletePlanAsync(int planID)
         {
-            string query = "DELETE FROM Digital_Plans WHERE PlanID = @PlanID";
-            using var connection = new ConnectionQuery(_localConnectionString, query);
-            connection.AddParameter("@PlanID", SqlDbType.Int, planID);
-
-            await connection.ExecuteWithRetryAsync(async () =>
+            try
             {
+                string query = "DELETE FROM Digital_Plans WHERE PlanID = @PlanID";
+                using var connection = new ConnectionQuery(query);
                 var command = connection.Command();
+                command.Parameters.AddWithValue("@PlanID", planID);
+
                 await connection.OpenConnectionAsync();
                 int rowsAffected = await command.ExecuteNonQueryAsync();
                 await connection.CloseConnectionAsync();
@@ -571,44 +543,62 @@ namespace Plan_Cabinet.View_Models
                 {
                     await ShowAlertRequested.Invoke("Deleted", "Plan successfully deleted.", "OK");
                 }
-                return rowsAffected;
-            }, async () => await ShowAlertWithChoiceRequested.Invoke("Connection Lost", "Please connect to the VPN.", "Retry", "Cancel"));
+            }
+            catch (Exception ex)
+            {
+                await ShowAlertRequested.Invoke("SQL Error", ex.Message, "OK");
+            }
         }
-
 
         private async Task<bool> PlanNameExistsAsync(string planName, int excludePlanID)
         {
-            string query = "SELECT COUNT(1) FROM Digital_Plans WHERE Plan_Name = @Plan_Name AND PlanID != @PlanID";
-            using var connection = new ConnectionQuery(_localConnectionString, query);
-            connection.AddParameter("@Plan_Name", SqlDbType.VarChar, planName);
-            connection.AddParameter("@PlanID", SqlDbType.Int, excludePlanID);
-
-            var count = await connection.ExecuteWithRetryAsync(async () =>
+            try
             {
+                string query = "SELECT COUNT(1) FROM Digital_Plans WHERE Plan_Name = @Plan_Name AND PlanID != @PlanID";
+                using var connection = new ConnectionQuery(query);
                 var command = connection.Command();
-                await connection.OpenConnectionAsync();
-                object? result = await command.ExecuteScalarAsync();
-                await connection.CloseConnectionAsync();
-                return result != null && int.TryParse(result.ToString(), out int c) ? c : 0;
-            }, async () => await ShowAlertWithChoiceRequested.Invoke("Connection Lost", "Please connect to the VPN.", "Retry", "Cancel"));
 
-            return count > 0;
+                command.Parameters.AddWithValue("@Plan_Name", planName);
+                command.Parameters.AddWithValue("@PlanID", excludePlanID);
+
+                await connection.OpenConnectionAsync();
+
+                object? result = await command.ExecuteScalarAsync();
+
+                await connection.CloseConnectionAsync();
+
+                if (result != null && int.TryParse(result.ToString(), out int count))
+                {
+                    return count > 0;
+                }
+
+                return false;
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"Error checking plan name existence: {ex}");
+                return false;
+            }
         }
 
         private async Task DeletePlanByNameAsync(string planName)
         {
-            string query = "DELETE FROM Digital_Plans WHERE Plan_Name = @Plan_Name";
-            using var connection = new ConnectionQuery(_localConnectionString, query);
-            connection.AddParameter("@Plan_Name", SqlDbType.VarChar, planName);
-
-            await connection.ExecuteWithRetryAsync(async () =>
+            try
             {
+                string query = "DELETE FROM Digital_Plans WHERE Plan_Name = @Plan_Name";
+                using var connection = new ConnectionQuery(query);
                 var command = connection.Command();
+
+                command.Parameters.AddWithValue("@Plan_Name", planName);
+
                 await connection.OpenConnectionAsync();
-                int rowsAffected = await command.ExecuteNonQueryAsync();
+                await command.ExecuteNonQueryAsync();
                 await connection.CloseConnectionAsync();
-                return rowsAffected;
-            }, async () => await ShowAlertWithChoiceRequested.Invoke("Connection Lost", "Please connect to the VPN.", "Retry", "Cancel"));
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"Error deleting plan by name: {ex}");
+            }
         }
         public void Dispose()
         {

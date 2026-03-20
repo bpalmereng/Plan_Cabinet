@@ -179,7 +179,7 @@ namespace Plan_Cabinet.View_Models
 
         public AddPlansViewModel(INavigation navigation, string? clientId, string? tenantId, string? clientSecret, string? driveId)
         {
-
+            
             _navigation = navigation ?? throw new ArgumentNullException(nameof(navigation));
             // Pass the variables to the new constructor
             _graphService = new GraphService(clientId, tenantId, clientSecret, driveId);
@@ -212,24 +212,9 @@ namespace Plan_Cabinet.View_Models
         {
             try
             {
-                // Parameterized query to prevent SQL injection.
-                string query = "SELECT PlanID FROM Digital_Plans WHERE Plan_Name = @Plan_Name";
-                using var connection = new ConnectionQuery(_localConnectionString, query);
-                connection.AddParameter("@Plan_Name", SqlDbType.VarChar, name);
-
-                // Use ExecuteWithRetryAsync to handle connection and retry logic.
-                DataTable dtbl = await connection.ExecuteWithRetryAsync(
-                    async () =>
-                    {
-                        await connection.OpenConnectionAsync();
-                        using var adapter = new SqlDataAdapter(connection.Command());
-                        var tempDt = new DataTable();
-                        await Task.Run(() => adapter.Fill(tempDt));
-                        await connection.CloseConnectionAsync();
-                        return tempDt;
-                    },
-                    async () => await ShowAlertWithChoiceRequested.Invoke("Connection Lost", "Please connect to the VPN.", "Retry", "Cancel")
-                );
+                string query = $"SELECT PlanID FROM Digital_Plans WHERE Plan_Name ='{name}'";
+                using var connector = new ConnectionQuery(query);
+                DataTable dtbl = await connector.RunQuery();
 
                 if (dtbl.Rows.Count > 0)
                 {
@@ -242,7 +227,6 @@ namespace Plan_Cabinet.View_Models
             }
             catch (Exception ex)
             {
-                Debug.WriteLine($"Error checking plan name existence: {ex}");
                 if (ShowAlertRequested != null)
                 {
                     await ShowAlertRequested?.Invoke("Error", $"Failed to validate plan name: {ex.Message}", "OK");
@@ -263,41 +247,33 @@ namespace Plan_Cabinet.View_Models
 
         private async Task InsertDatabaseAsync()
         {
-            string query = "INSERT INTO Digital_Plans (Plan_Name, Rd_Name, Subdivision, Reference, Plan_Date) VALUES(@Plan_Name, @Rd_Name, @Subdivision, @Reference, @Plan_Date)";
-            using var connector = new ConnectionQuery(_localConnectionString, query);
-
-            // Use the AddParameter method provided by the ConnectionQuery class
-            connector.AddParameter("@Plan_Name", SqlDbType.VarChar, PlanName ?? string.Empty);
-            connector.AddParameter("@Rd_Name", SqlDbType.VarChar, RdName ?? string.Empty);
-            connector.AddParameter("@Subdivision", SqlDbType.VarChar, Subdivision ?? string.Empty);
-            connector.AddParameter("@Reference", SqlDbType.VarChar, Reference ?? string.Empty);
-            connector.AddParameter("@Plan_Date", SqlDbType.DateTime, PlanDate);
-
             try
             {
-                int rowsAffected = (int)await connector.ExecuteWithRetryAsync(
-                    async () =>
-                    {
-                        var command = connector.Command();
-                        await connector.OpenConnectionAsync();
-                        int result = await command.ExecuteNonQueryAsync();
-                        await connector.CloseConnectionAsync();
-                        return result;
-                    },
-                    async () => await ShowAlertWithChoiceRequested?.Invoke("Connection Lost", "Please connect to the VPN.", "Retry", "Cancel")
-                    );
-
-                if (rowsAffected <= 0)
+                string query = "INSERT INTO Digital_Plans (Plan_Name, Rd_Name, Subdivision, Reference, Plan_Date) VALUES(@Plan_Name, @Rd_Name, @Subdivision, @Reference, @Plan_Date)";
+                using (var connector = new ConnectionQuery(query))
                 {
-                    if (ShowAlertRequested != null)
+                    SqlCommand command = connector.Command();
+                    command.Parameters.Add("@Plan_Name", SqlDbType.VarChar).Value = PlanName ?? string.Empty;
+                    command.Parameters.Add("@Rd_Name", SqlDbType.VarChar).Value = RdName ?? string.Empty;
+                    command.Parameters.Add("@Subdivision", SqlDbType.VarChar).Value = Subdivision ?? string.Empty;
+                    command.Parameters.Add("@Reference", SqlDbType.VarChar).Value = Reference ?? string.Empty;
+                    command.Parameters.Add("@Plan_Date", SqlDbType.DateTime).Value = PlanDate;
+
+                    await connector.OpenConnectionAsync();
+                    int rowsAffected = await command.ExecuteNonQueryAsync();
+                    await connector.CloseConnectionAsync();
+
+                    if (rowsAffected <= 0)
                     {
-                        await ShowAlertRequested?.Invoke("Alert", "Sorry there was an error. Please try again or contact support.", "Ok");
+                        if (ShowAlertRequested != null)
+                        {
+                            await ShowAlertRequested?.Invoke("Alert", "Sorry there was an error. Please try again or contact support.", "Ok");
+                        }
                     }
                 }
             }
             catch (Exception ex)
             {
-                Debug.WriteLine($"Database insert failed: {ex.Message}");
                 if (ShowAlertRequested != null)
                 {
                     await ShowAlertRequested?.Invoke("Error", $"Database insert failed: {ex.Message}", "OK");
