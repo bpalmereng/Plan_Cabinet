@@ -2,7 +2,7 @@
 
   <PropertyGroup>
     <TargetFrameworks Condition="$([MSBuild]::IsOSPlatform('windows'))">$(TargetFrameworks);net8.0-windows10.0.22621.0</TargetFrameworks>
-    <TargetPlatformVersion>10.0.22621.0</TargetPlatformVersion>
+    <TargetPlatformVersion>10.0.22000.0</TargetPlatformVersion>
 
     <OutputType>Exe</OutputType>
     <RootNamespace>Plan_Cabinet</RootNamespace>
@@ -56,7 +56,7 @@
     <ApplicationId>com.companyname.plancabinet</ApplicationId>
   </PropertyGroup>
 
-  <PropertyGroup Condition="'$(Configuration)|$(TargetFramework)|$(Platform)'=='Debug|net8.0-windows10.0.22621.0|AnyCPU'">
+  <PropertyGroup Condition="'$(Configuration)|$(TargetFramework)|$(Platform)'=='Debug|net8.0-windows10.0.22000.0|AnyCPU'">
     <ApplicationId>com.companyname.plancabinet</ApplicationId>
     <ApplicationTitle>Plan Cabinet</ApplicationTitle>
     <IsPublishable>True</IsPublishable>
@@ -74,7 +74,7 @@
     <ApplicationId>com.companyname.plancabinet</ApplicationId>
   </PropertyGroup>
 
-  <PropertyGroup Condition="'$(Configuration)|$(TargetFramework)|$(Platform)'=='Debug|net8.0-windows10.0.22621.0|x64'">
+  <PropertyGroup Condition="'$(Configuration)|$(TargetFramework)|$(Platform)'=='Debug|net8.0-windows10.0.22000.0|x64'">
     <ApplicationId>com.companyname.plancabinet</ApplicationId>
     <ApplicationTitle>Plan Cabinet</ApplicationTitle>
     <IsPublishable>True</IsPublishable>
@@ -92,7 +92,7 @@
     <ApplicationId>com.companyname.plancabinet</ApplicationId>
   </PropertyGroup>
 
-  <PropertyGroup Condition="'$(Configuration)|$(TargetFramework)|$(Platform)'=='Release|net8.0-windows10.0.22621.0|AnyCPU'">
+  <PropertyGroup Condition="'$(Configuration)|$(TargetFramework)|$(Platform)'=='Release|net8.0-windows10.0.22000.0|AnyCPU'">
     <ApplicationId>com.companyname.plancabinet</ApplicationId>
     <ApplicationTitle>Plan Cabinet</ApplicationTitle>
     <IsPublishable>True</IsPublishable>
@@ -110,7 +110,7 @@
     <ApplicationId>com.companyname.plancabinet</ApplicationId>
   </PropertyGroup>
 
-  <PropertyGroup Condition="'$(Configuration)|$(TargetFramework)|$(Platform)'=='Release|net8.0-windows10.0.22621.0|x64'">
+  <PropertyGroup Condition="'$(Configuration)|$(TargetFramework)|$(Platform)'=='Release|net8.0-windows10.0.22000.0|x64'">
     <ApplicationId>com.companyname.plancabinet</ApplicationId>
     <ApplicationTitle>Plan Cabinet</ApplicationTitle>
     <IsPublishable>True</IsPublishable>
