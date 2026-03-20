@@ -52,7 +52,7 @@ jobs:
         shell: pwsh
         run: |
           # Keep it as a DLL to enable auto-updates
-          dotnet publish -f net8.0-windows10.0.22000.0 -c Release -p:RuntimeIdentifier=win-x64 -p:AppxPackageDir='.\Publish' -p:AppxBundle=True -p:PublishReadyToRun=True -p:SelfContained=True -p:AppInstallerUri='https://bpalmereng.github.io/Plan_Cabinet/' -p:AppxPackageSigningEnabled=true -p:PackageCertificateThumbprint='${{ steps.get_thumbprint.outputs.cert_thumbprint }}' -p:AppxPackageUpdateUri='https://bpalmereng.github.io/Plan_Cabinet/' -p:AppInstallerUpdateFrequency=1 -p:AppInstallerCheckForUpdateFrequency=OnLaunch -p:EnableCompression=True
+          dotnet publish -f net8.0-windows10.0.22000.0 -c Release -p:RuntimeIdentifier=win10-x64 -p:AppxPackageDir='.\Publish' -p:AppxBundle=True -p:PublishReadyToRun=True -p:SelfContained=True -p:AppInstallerUri='https://bpalmereng.github.io/Plan_Cabinet/' -p:AppxPackageSigningEnabled=true -p:PackageCertificateThumbprint='${{ steps.get_thumbprint.outputs.cert_thumbprint }}' -p:AppxPackageUpdateUri='https://bpalmereng.github.io/Plan_Cabinet/' -p:AppInstallerUpdateFrequency=1 -p:AppInstallerCheckForUpdateFrequency=OnLaunch -p:EnableCompression=True
 
       - name: Find Installer Package
         id: find_bundle
