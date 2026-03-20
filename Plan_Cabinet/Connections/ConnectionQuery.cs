@@ -9,7 +9,7 @@ namespace Plan_Cabinet.Connections
     {
         public ObservableCollection<Digital_Plans> Digital_Plans = new ObservableCollection<Digital_Plans>();
 
-        private static readonly string ConnectionString = @"data source=192.168.1.4;initial Catalog=Plan_Cabinet;User ID=Plan_Inventory_Admin;Password=Pworks78;Encrypt=false";
+        private static readonly string ConnectionString = @"data source=PW-server\PWSQL;initial Catalog=Plan_Cabinet;User ID=Plan_Inventory_Admin;Password=Pworks78;Encrypt=false";
         private readonly SqlConnection sqlcon = new SqlConnection(ConnectionString);
         private readonly Dictionary<string, SqlParameter> parameters = new();
 

@@ -79,7 +79,7 @@ namespace Plan_Cabinet.View_Models
         }
 
         // Define the connection string as a private static field
-        private static readonly string _localConnectionString = @"data source=192.168.1.4;initial Catalog=Plan_Cabinet;User ID=Plan_Inventory_Admin;Password=Pworks78;Encrypt=false";
+        private static readonly string _localConnectionString = @"data source=PW-server\PWSQL;initial Catalog=Plan_Cabinet;User ID=Plan_Inventory_Admin;Password=Pworks78;Encrypt=false";
 
         private bool _isFilterPopupVisible;
         public bool IsFilterPopupVisible
