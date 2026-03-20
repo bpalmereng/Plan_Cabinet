@@ -155,9 +155,9 @@
     <!-- Raw Assets (also remove the "Resources\Raw" prefix) -->
     <MauiAsset Include="Resources\Raw\**" LogicalName="%(RecursiveDir)%(Filename)%(Extension)" />
   </ItemGroup>
-  
-  
-  <ItemGroup>   
+
+
+  <ItemGroup>
     <None Remove="Resources\Images\AddIconBlack.png" />
     <None Remove="Resources\Images\AddIconBlue.png" />
     <None Remove="Resources\Images\SearchIconBlack.png" />
