@@ -22,7 +22,7 @@ namespace Plan_Cabinet.Connections
             this.Query_ = Query_;
             this.sqlcon = new SqlConnection(_connectionString);
         }
-
+        
         public void AddParameter(string name, SqlDbType type, object value)
         {
             parameters[name] = new SqlParameter(name, type) { Value = value };
