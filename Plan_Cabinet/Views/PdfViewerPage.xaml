@@ -1,14 +1,15 @@
-<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
-             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
-             xmlns:pdfViewer="clr-namespace:Syncfusion.Maui.PdfViewer;assembly=Syncfusion.Maui.PdfViewer"
-             xmlns:local="clr-namespace:Plan_Cabinet.Views"
-             xmlns:viewModels="clr-namespace:Plan_Cabinet.View_Models"  
-             xmlns:toolkit="http://schemas.microsoft.com/dotnet/2022/maui/toolkit"
-             x:Class="Plan_Cabinet.Views.PdfViewerPage"
-             Title="{Binding Title}"
-             NavigationPage.HasNavigationBar="False">
+<ContentPage
+    x:Class="Plan_Cabinet.Views.PdfViewerPage"
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    xmlns:local="clr-namespace:Plan_Cabinet.Views"
+    xmlns:pdfViewer="clr-namespace:Syncfusion.Maui.PdfViewer;assembly=Syncfusion.Maui.PdfViewer"
+    xmlns:toolkit="http://schemas.microsoft.com/dotnet/2022/maui/toolkit"
+    xmlns:viewModels="clr-namespace:Plan_Cabinet.View_Models"
+    Title="{Binding Title}"
+    NavigationPage.HasNavigationBar="False">
 
- 
+
 
     <Grid RowSpacing="0">
         <Grid.RowDefinitions>
@@ -17,58 +18,64 @@
         </Grid.RowDefinitions>
 
         <Grid Grid.Row="0">
-            <pdfViewer:SfPdfViewer x:Name="pdfViewer"
-                       DocumentSource="{Binding PdfStreamSource}"
-                       DocumentLoaded="OnPdfViewerDocumentLoaded"
-                       PageNumber="{Binding PageNumber, Mode=TwoWay}"
-                       SizeChanged="OnPdfViewerSizeChanged">
-            </pdfViewer:SfPdfViewer>
+            <pdfViewer:SfPdfViewer
+                x:Name="pdfViewer"
+                DocumentLoaded="OnPdfViewerDocumentLoaded"
+                DocumentSource="{Binding PdfStreamSource}"
+                PageNumber="{Binding PageNumber, Mode=TwoWay}"
+                SizeChanged="OnPdfViewerSizeChanged" />
         </Grid>
 
-        <StackLayout Grid.Row="1"
-                     Orientation="Horizontal"
-                     HorizontalOptions="Center"
-                     Spacing="20"
-                     Padding="0,10"
-                     BackgroundColor="White">
-            <Button Text="Download PDF"
-                    HeightRequest="50"
-                    WidthRequest="160"
-                    Command="{Binding DownloadCommand}"
-                    CornerRadius="25" />
+        <StackLayout
+            Grid.Row="1"
+            Padding="0,10"
+            BackgroundColor="White"
+            HorizontalOptions="Center"
+            Orientation="Horizontal"
+            Spacing="20">
+            <Button
+                Command="{Binding DownloadCommand}"
+                CornerRadius="25"
+                HeightRequest="50"
+                Text="Download PDF"
+                WidthRequest="160" />
 
-            <Button Text="Share PDF"
-                    HeightRequest="50"
-                    WidthRequest="160"
-                    Command="{Binding ShareCommand}"
-                    CornerRadius="25" />
+            <Button
+                Command="{Binding ShareCommand}"
+                CornerRadius="25"
+                HeightRequest="50"
+                Text="Share PDF"
+                WidthRequest="160" />
 
-            <Button Text="Cancel"
-                    HeightRequest="50"
-                    WidthRequest="160"
-                    Command="{Binding CancelCommand}"
-                    CornerRadius="25" />
+            <Button
+                Command="{Binding CancelCommand}"
+                CornerRadius="25"
+                HeightRequest="50"
+                Text="Cancel"
+                WidthRequest="160" />
         </StackLayout>
 
-        <ContentView x:Name="SharePopup"
-                     IsVisible="{Binding IsSharePopupVisible}"
-                     BackgroundColor="#80000000"
-                     Padding="20"
-                     VerticalOptions="Fill"
-                     HorizontalOptions="Fill"
-                     InputTransparent="False">
+        <ContentView
+            x:Name="SharePopup"
+            Padding="20"
+            BackgroundColor="#80000000"
+            HorizontalOptions="Fill"
+            InputTransparent="False"
+            IsVisible="{Binding IsSharePopupVisible}"
+            VerticalOptions="Fill">
             <ContentView.GestureRecognizers>
                 <TapGestureRecognizer Command="{Binding ShareCancelCommand}" />
             </ContentView.GestureRecognizers>
 
-            <Frame BackgroundColor="White"
-                   CornerRadius="12"
-                   Padding="15"
-                   WidthRequest="600"
-                   MinimumHeightRequest="400"
-                   VerticalOptions="Center"
-                   HorizontalOptions="Center"
-                   HasShadow="True">
+            <Frame
+                Padding="15"
+                BackgroundColor="White"
+                CornerRadius="12"
+                HasShadow="True"
+                HorizontalOptions="Center"
+                MinimumHeightRequest="400"
+                VerticalOptions="Center"
+                WidthRequest="600">
 
                 <Frame.GestureRecognizers>
                     <TapGestureRecognizer Command="{Binding ClearShareInputsCommand}" />
@@ -76,57 +83,65 @@
 
                 <ScrollView>
                     <VerticalStackLayout Spacing="12">
-                        <Label Text="Share PDF"
-                               FontAttributes="Bold"
-                               FontSize="20"
-                               HorizontalOptions="Center" />
+                        <Label
+                            FontAttributes="Bold"
+                            FontSize="20"
+                            HorizontalOptions="Center"
+                            Text="Share PDF" />
 
                         <Label Text="Recipient Name(s) – comma separated" />
-                        <ScrollView Orientation="Horizontal"
-                                    IsVisible="{Binding IsNameTokensLayoutVisible}"
-                                    HorizontalOptions="Fill"
-                                    VerticalOptions="Start"
-                                    BackgroundColor="Transparent"
-                                    HorizontalScrollBarVisibility="Never"
-                                    VerticalScrollBarVisibility="Never">
-                            <FlexLayout x:Name="NameTokensLayout"
-                                        Wrap="Wrap"
-                                        AlignItems="Start"
-                                        HorizontalOptions="Start"
-                                        Margin="0"
-                                        IsVisible="{Binding IsNameTokensLayoutVisible}"
-                                        BindableLayout.ItemsSource="{Binding NameTokens}">
+                        <ScrollView
+                            BackgroundColor="Transparent"
+                            HorizontalOptions="Fill"
+                            HorizontalScrollBarVisibility="Never"
+                            IsVisible="{Binding IsNameTokensLayoutVisible}"
+                            Orientation="Horizontal"
+                            VerticalOptions="Start"
+                            VerticalScrollBarVisibility="Never">
+                            <FlexLayout
+                                x:Name="NameTokensLayout"
+                                Margin="0"
+                                AlignItems="Start"
+                                BindableLayout.ItemsSource="{Binding NameTokens}"
+                                HorizontalOptions="Start"
+                                IsVisible="{Binding IsNameTokensLayoutVisible}"
+                                Wrap="Wrap">
                                 <BindableLayout.ItemTemplate>
                                     <DataTemplate>
-                                        <Frame Padding="4"
-                                               Margin="1"
-                                               CornerRadius="8"
-                                               BackgroundColor="SeaGreen"
-                                               HasShadow="False">
+                                        <Frame
+                                            Margin="1"
+                                            Padding="4"
+                                            BackgroundColor="SeaGreen"
+                                            CornerRadius="8"
+                                            HasShadow="False">
                                             <HorizontalStackLayout Spacing="2">
-                                                <Label Text="{Binding .}"
-                                                       TextColor="White"
-                                                       FontSize="12"
-                                                       VerticalOptions="Center"
-                                                       HorizontalOptions="Center" />
-                                                <BoxView WidthRequest="1"
-                                                         HeightRequest="26"
-                                                         Color="White"
-                                                         VerticalOptions="Center" />
-                                                <Frame Padding="2"
-                                                       WidthRequest="26"
-                                                       HeightRequest="26"
-                                                       BackgroundColor="LightGray"
-                                                       BorderColor="Gray"
-                                                       CornerRadius="13"
-                                                       HasShadow="False">
-                                                    <Label Text="×"
-                                                           TextColor="Black"
-                                                           FontSize="21"
-                                                           FontAttributes="Bold"
-                                                           LineHeight="1"
-                                                           VerticalOptions="Center"
-                                                           HorizontalOptions="Center" />
+                                                <Label
+                                                    FontSize="12"
+                                                    HorizontalOptions="Center"
+                                                    Text="{Binding .}"
+                                                    TextColor="White"
+                                                    VerticalOptions="Center" />
+                                                <BoxView
+                                                    HeightRequest="26"
+                                                    VerticalOptions="Center"
+                                                    WidthRequest="1"
+                                                    Color="White" />
+                                                <Frame
+                                                    Padding="2"
+                                                    BackgroundColor="LightGray"
+                                                    BorderColor="Gray"
+                                                    CornerRadius="13"
+                                                    HasShadow="False"
+                                                    HeightRequest="26"
+                                                    WidthRequest="26">
+                                                    <Label
+                                                        FontAttributes="Bold"
+                                                        FontSize="21"
+                                                        HorizontalOptions="Center"
+                                                        LineHeight="1"
+                                                        Text="×"
+                                                        TextColor="Black"
+                                                        VerticalOptions="Center" />
                                                 </Frame>
                                             </HorizontalStackLayout>
                                         </Frame>
@@ -134,53 +149,60 @@
                                 </BindableLayout.ItemTemplate>
                             </FlexLayout>
                         </ScrollView>
-                        <Entry x:Name="RecipientNameEntry"
-                               Text="{Binding RecipientNameEntryText}"
-                               Placeholder="Type name and press comma or enter"
-                               Completed="OnRecipientNameEntryCompleted" />
+                        <Entry
+                            x:Name="RecipientNameEntry"
+                            Completed="OnRecipientNameEntryCompleted"
+                            Placeholder="Type name and press comma or enter"
+                            Text="{Binding RecipientNameEntryText}" />
 
                         <Label Text="Recipient Email(s) – comma separated" />
-                        <ScrollView Orientation="Horizontal"
-                                    IsVisible="{Binding IsEmailTokensLayoutVisible}"
-                                    HorizontalOptions="Fill"
-                                    VerticalOptions="Start"
-                                    BackgroundColor="Transparent"
-                                    HorizontalScrollBarVisibility="Never"
-                                    VerticalScrollBarVisibility="Never">
-                            <FlexLayout x:Name="EmailTokensLayout"
-                                        Wrap="Wrap"
-                                        AlignItems="Start"
-                                        HorizontalOptions="Start"
-                                        Margin="0"
-                                        IsVisible="{Binding IsEmailTokensLayoutVisible}"
-                                        BindableLayout.ItemsSource="{Binding EmailTokens}">
+                        <ScrollView
+                            BackgroundColor="Transparent"
+                            HorizontalOptions="Fill"
+                            HorizontalScrollBarVisibility="Never"
+                            IsVisible="{Binding IsEmailTokensLayoutVisible}"
+                            Orientation="Horizontal"
+                            VerticalOptions="Start"
+                            VerticalScrollBarVisibility="Never">
+                            <FlexLayout
+                                x:Name="EmailTokensLayout"
+                                Margin="0"
+                                AlignItems="Start"
+                                BindableLayout.ItemsSource="{Binding EmailTokens}"
+                                HorizontalOptions="Start"
+                                IsVisible="{Binding IsEmailTokensLayoutVisible}"
+                                Wrap="Wrap">
                                 <BindableLayout.ItemTemplate>
                                     <DataTemplate>
-                                        <Frame Padding="4"
-                                               Margin="1"
-                                               CornerRadius="8"
-                                               BackgroundColor="SeaGreen"
-                                               HasShadow="False">
+                                        <Frame
+                                            Margin="1"
+                                            Padding="4"
+                                            BackgroundColor="SeaGreen"
+                                            CornerRadius="8"
+                                            HasShadow="False">
                                             <HorizontalStackLayout Spacing="2">
-                                                <Label Text="{Binding .}"
-                                                       TextColor="White"
-                                                       FontSize="12"
-                                                       VerticalOptions="Center"
-                                                       HorizontalOptions="Center" />
-                                                <Frame Padding="2"
-                                                       WidthRequest="26"
-                                                       HeightRequest="26"
-                                                       BackgroundColor="Transparent"
-                                                       BorderColor="White"
-                                                       CornerRadius="13"
-                                                       HasShadow="False">
-                                                    <Label Text="×"
-                                                           TextColor="White"
-                                                           FontSize="21"
-                                                           FontAttributes="Bold"
-                                                           LineHeight="1"
-                                                           VerticalOptions="Center"
-                                                           HorizontalOptions="Center" />
+                                                <Label
+                                                    FontSize="12"
+                                                    HorizontalOptions="Center"
+                                                    Text="{Binding .}"
+                                                    TextColor="White"
+                                                    VerticalOptions="Center" />
+                                                <Frame
+                                                    Padding="2"
+                                                    BackgroundColor="Transparent"
+                                                    BorderColor="White"
+                                                    CornerRadius="13"
+                                                    HasShadow="False"
+                                                    HeightRequest="26"
+                                                    WidthRequest="26">
+                                                    <Label
+                                                        FontAttributes="Bold"
+                                                        FontSize="21"
+                                                        HorizontalOptions="Center"
+                                                        LineHeight="1"
+                                                        Text="×"
+                                                        TextColor="White"
+                                                        VerticalOptions="Center" />
                                                 </Frame>
                                             </HorizontalStackLayout>
                                         </Frame>
@@ -188,24 +210,27 @@
                                 </BindableLayout.ItemTemplate>
                             </FlexLayout>
                         </ScrollView>
-                        <Entry x:Name="RecipientEmailEntry"
-                               Text="{Binding RecipientEmailEntryText}"
-                               Placeholder="Type email and press comma or enter"
-                               Keyboard="Email"
-                               Completed="OnRecipientEmailEntryCompleted" />
+                        <Entry
+                            x:Name="RecipientEmailEntry"
+                            Completed="OnRecipientEmailEntryCompleted"
+                            Keyboard="Email"
+                            Placeholder="Type email and press comma or enter"
+                            Text="{Binding RecipientEmailEntryText}" />
 
                         <HorizontalStackLayout Spacing="10" VerticalOptions="Center">
                             <Switch IsToggled="{Binding AllowDownloadPermission}" />
                             <Label Text="Allow download" VerticalOptions="Center" />
                         </HorizontalStackLayout>
 
-                        <HorizontalStackLayout Spacing="12" HorizontalOptions="End">
-                            <Button Text="Cancel"
-                                    Command="{Binding ShareCancelCommand}"
-                                    WidthRequest="80" />
-                            <Button Text="Send"
-                                    Command="{Binding ShareSendCommand}"
-                                    WidthRequest="80" />
+                        <HorizontalStackLayout HorizontalOptions="End" Spacing="12">
+                            <Button
+                                Command="{Binding ShareCancelCommand}"
+                                Text="Cancel"
+                                WidthRequest="80" />
+                            <Button
+                                Command="{Binding ShareSendCommand}"
+                                Text="Send"
+                                WidthRequest="80" />
                         </HorizontalStackLayout>
                     </VerticalStackLayout>
                 </ScrollView>
